@@ -1,0 +1,40 @@
+# 这个文件会提交到公开仓库：只写配置入口，不写真实密钥。
+# 真实密钥放同目录下的 application-local.yml（已被 .gitignore 忽略），
+# 或者用环境变量 DEEPSEEK_API_KEY / DASHSCOPE_API_KEY。
+spring:
+  application:
+    name: retouch-agent-server
+  config:
+    # 有本地密钥文件就加载，没有也能启动
+    import:
+      - optional:classpath:application-local.yml
+      - optional:file:./application-local.yml
+  ai:
+    # 规划模型：OpenAI 兼容接口。默认 DeepSeek；改用 DashScope 通义千问时见 application-local.yml.example
+    openai:
+      api-key: ${DEEPSEEK_API_KEY:}
+      base-url: https://api.deepseek.com
+      chat:
+        model: deepseek-chat
+        temperature: 0
+
+retouch:
+  # 图像模型（换背景、扩图、局部消除等）走 DashScope 原生图像接口，由图像服务调用
+  image:
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY:}
+      base-url: https://dashscope.aliyuncs.com
+      text-to-image-model: qwen-image-3.0-pro
+      image-edit-model: qwen-image-edit-max
+  # 连通性检查：--retouch.model-check.enabled=true 时启动后真实调用一次规划模型，打印结果后退出
+  model-check:
+    enabled: false
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

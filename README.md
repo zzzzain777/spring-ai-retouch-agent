@@ -2,7 +2,7 @@
 
 用 Java 21、Spring Boot 4.1.x 和 Spring AI 2.0.x 实现的 AI 修图 Agent 后端。规划模型用 DeepSeek；Python 只负责图像计算和 DashScope 图像接口调用。
 
-> 当前状态：**A 阶段（上游基线核查）**。仓库里还没有 Java 或 Python 实现代码。已有的是上游基线记录和改造前冻结的 Agent 行为评测集，评测结果只有上游原版的确定性部分。各阶段的真实进度以 [docs/project-state.md](docs/project-state.md) 为准。
+> 当前状态：A 阶段已完成，Java 工程刚起步。`server/` 里只有 Spring Boot 骨架和模型配置入口，Agent 功能尚未实现；Python 图像服务还没有代码。已有上游基线记录和改造前冻结的 Agent 行为评测集，评测结果只有上游原版的确定性部分。各阶段的真实进度以 [docs/project-state.md](docs/project-state.md) 为准。
 
 ## 参考来源与复用范围
 
@@ -24,6 +24,7 @@
 | [docs/upstream-baseline.md](docs/upstream-baseline.md) | 上游基线记录（版本、许可核查、功能、工具、接口、Agent 状态机） |
 | [docs/project-state.md](docs/project-state.md) | 各阶段状态、命令、环境、证据与阻断 |
 | [docs/claim-ledger.md](docs/claim-ledger.md) | 简历陈述与代码、测试、评测证据的对照 |
+| [server/README.md](server/README.md) | Java 后端：模型密钥配置、连通性检查、构建 |
 | [eval/README.md](eval/README.md) | 四层评测、冻结数据集 agent-behavior-v1、运行方法与 DeepSeek 转发器 |
 
 ## 密钥

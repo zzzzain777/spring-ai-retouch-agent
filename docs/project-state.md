@@ -24,6 +24,8 @@
 | 原版确定性 Agent 基线 | 已验证 | 执行 17 例全部通过（越权 7、旧流程回归 8、失败 2），报告 `eval/reports/upstream-49f6ad8-noplanner-*/` |
 | DeepSeek 规划转发器 | 已实现 | `eval/tools/planner_proxy.py`，只用本地假服务验证了转发、换密钥、记轨迹和无密钥拒绝；尚未连过真实 DeepSeek |
 | 原版真实模型基线 | 待验收 | 规划模型改用 DeepSeek。云端网络策略拒绝 `api.deepseek.com`（代理 403），环境未配置 `DEEPSEEK_API_KEY`；27 例记为跳过 |
+| Java 工程骨架与模型配置入口 | 已实现 | `server/`：Spring Boot 4.1.2 + Spring AI 2.0.2（OpenAI 兼容接口，默认 DeepSeek，可切 DashScope 兼容模式）；`application.yml` 只有 `${DEEPSEEK_API_KEY:}`、`${DASHSCOPE_API_KEY:}` 入口，真实密钥放被忽略的 `application-local.yml`。云端已验证：`mvn test` 通过；无密钥可启动；本地 yml 中的 key 被读取；请求路径为 `{base-url}/chat/completions` 且不带工具（本地假服务只验证线路）。真实模型调用尚未验证 |
+| 真实 DeepSeek 连通性检查 | 待验收 | 云端网络拒绝 `api.deepseek.com`；改在用户 Mac 上用本地 `application-local.yml` 运行 `--retouch.model-check.enabled=true` |
 | 新 GitHub 仓库与首个提交 | 已验证 | `zzzzain777/spring-ai-retouch-agent@85c0c365477f35b3f59d72e9e40d217f662c08fa`（tree `8fc8e76`），经用户 Mac 本机 git（gh 登录 zzzzain777）推送；云端重新克隆核对 tree 一致 |
 
 ## 环境记录
@@ -36,7 +38,7 @@
 
 ## 阻断
 
-1. **DeepSeek 网络与密钥**（跑原版真实模型基线、B 阶段规划调用前需要）：在项目所选云端环境的网络设置里放行 `api.deepseek.com`，并在 Environment variables 配置 `DEEPSEEK_API_KEY`。本地运行 Java 版时把密钥写进未跟踪的 `application-local.yml`；不写进 `application.yml` 或任何被跟踪的文件。
+1. **DeepSeek 密钥**：用户 2026-11-05 决定把密钥写进 Java 项目的 yml。做法是本地未跟踪的 `server/src/main/resources/application-local.yml`（示例见同目录 `.example`），不写进被跟踪的 `application.yml`。云端网络拒绝 `api.deepseek.com`，所以真实模型调用（连通性检查、原版与 Java 版的 LLM 评测）在用户 Mac 上运行。
 2. **图像模型**（换背景、扩图、局部消除等真实出图前需要）：放行 `dashscope.aliyuncs.com` 并配置 `DASHSCOPE_API_KEY`。
 3. **推送方式**：Claude 的 GitHub 连接账号对本仓库无写权限，每次推送经用户 Mac 的 Remote Control 用本机 git 完成，需要用户在 Mac 上确认。
 
