@@ -160,6 +160,16 @@ README 写 21 种，代码实际注册 22 项。“执行”列：`队列` 表�
 - Agent 轮次的进度**不走 SSE**：前端 `useTurns` 在最新一轮为 `running` 时每 800ms 轮询 `GET /messages`。
 - 前端 `useRun` 合并 SSE 实时帧和 `GET /runs/{id}` 快照，终态后关闭 EventSource 并刷新快照。
 
+### 7.5 图层与选区语义
+
+- **画布文档**（`app/layers.py`）：`LayerDocument{width, height, layers[]}`，工具只改文档，像素由渲染环节按文档合成。`Layer` 字段为 id、kind（image / text / shape）、name、width、height、asset_id、transform{x, y, scale_x, scale_y, rotation}、opacity、visible、locked、text、font_size、fill。缩放是倍率不是像素，旋转顺时针为正。
+- **初始文档**：上传图片建会话时只有一个锁定的底图层 `base`；拆层后由 `subject` 与 `background` 等图层取代。
+- **目标图层**：`resolve_layer` 先按 id 找，再按图层名找（Agent 可以说“物体2”），未指定时取最上层可见图像层。界面与 Agent 共用这一默认目标。
+- **修订号**：改当前图或文档的编辑让会话 `revision` 加 1；只往图片墙添加产出的编辑（营销图、投放尺寸）不加。撤销与重做按 `history_seq` 在历史链上移动，历史接口按 seq 倒序返回且包含已撤销但未被覆盖的记录。
+- **选区**：点选走 SAM（`edits/segment.py`，进入点选时先算 embedding），笔刷选区把笔画按半径栅格化后与已有遮罩取并集。遮罩存为 `mask` 类素材，选区记录 `{revision, mask_asset_id, markers}` 存 Redis 键 `selection:{session_id}`，TTL 24 小时。提交选区时修订号与会话不一致返回 409（实测样例 R05）。
+- **选区失效**：读取选区时修订号不一致视为没有选区；遮罩尺寸与当前画幅不一致判为过期，不拉伸旧遮罩。
+- **遮罩钉住**：Agent 规划时如果有选区，会把 `mask_asset_id` 写进计划里每个使用遮罩的步骤，同一轮计划的多个步骤共用这张遮罩，不受中途修订号递增影响。
+
 ## 8. 数据模型
 
 | 存储 | 内容 |
@@ -174,7 +184,7 @@ README 写 21 种，代码实际注册 22 项。“执行”列：`队列` 表�
 | Redis | ARQ 队列；`run:{id}` 进度频道；`selection:{session_id}` 选区（TTL 24h） |
 | MinIO | 全部图片字节；对外只给预签名 URL |
 
-## 9. 运行方式（来自代码与 README，未全部复现）
+## 9. 运行方式（来自代码与 README）
 
 ```text
 docker compose up -d                       # postgres:17-alpine:7311, redis:7-alpine:7312, minio:7313/7314
@@ -194,20 +204,28 @@ uv run python -m app.eval app/eval/dataset # 确定性像素评测
 
 - 测试：13 个测试文件，静态统计 152 个测试函数（agent 24、tools 38、edits 35、sessions 11、assets 9、generation 9、eval 8、auth 7、batch 5、exports 5、health 1）。测试需要真实的 PostgreSQL、Redis 和 S3 兼容存储；图像模型固定为 mock，抠图固定为 `corner`，OCR 关闭，规划模型用 `monkeypatch` 替换为预设的 `AIMessage`。队列任务在测试中直接调用 `run_tool` 执行，不经过真实 Worker。
 - Agent 测试覆盖：单步派发、纯文本答复、长拒答截句、画布摘要和选区传给模型、未注册工具和非法参数拒绝、缺 Key 失败、多步等待确认、确认后按序执行、队列步骤解锁下一步、两图层共用选区、选区随画布变化失效、取消未开始步骤、失败步骤重试、环依赖与超长计划拒绝。**全部是假模型输出**，不能说明真实模型的规划质量。
+- 本项目新建的 Agent 行为评测集 `eval/datasets/agent-behavior-v1/`（44 例，冻结于 2026-11-05，早于任何 Java 代码）：单步 11、选区 3、多步 4、确认流程 4、失败 6、越权 7、注入 1、旧流程回归 8。评分口径见同目录 `RUBRIC.md`，逐例约束见 `CASES.md`。
 - 评测模块 `backend/app/eval/`：自带 3 个确定性用例（抠图 alpha IoU、调色 MAE/PSNR、投放尺寸的尺寸与完整包含），只评像素结果，不评“指令 → 计划 → 工具 → 最终任务”的 Agent 行为。
 
 ## 11. 本次复现记录（Q2）
 
-| 步骤 | 结果 |
-| --- | --- |
-| 克隆并核对 SHA | 已完成 |
-| `uv sync --all-extras` | 成功，依赖按 `uv.lock` 安装 |
-| PostgreSQL 17、Redis 7（compose） | 已启动且健康。Docker Hub 返回 429 限流，镜像改从 `mirror.gcr.io` 拉取后打成同名 tag |
-| MinIO | 未能获取：Docker Hub 返回 `pull access denied`，quay.io 与 dl.min.io 被沙箱网络策略拒绝（403）。已在 7313 端口启动 moto S3 服务作为替代，尚未使用 |
-| 迁移、pytest、API、Worker、前端 | **未运行**：沙箱安全策略拦截了执行上游代码的命令，需要用户明确同意后再跑 |
-| DashScope 连通性 | `dashscope.aliyuncs.com` 与 `dashscope-intl.aliyuncs.com` 均被网络策略拒绝（代理 403）；环境中未设置 `DASHSCOPE_API_KEY` |
+运行环境：Claude 云端沙箱，2026-11-05。上游代码只在沙箱里运行，不进入本仓库。
 
-因此 Q2 目前状态为 **待验收**，上游测试通过数、启动截图和真实模型基线都还没有证据。
+| 步骤 | 命令 / 做法 | 结果 |
+| --- | --- | --- |
+| 克隆并核对 SHA | `git clone` 后 `git rev-parse HEAD` | `49f6ad8…`，与 `ls-remote` 一致 |
+| 依赖 | `uv sync --all-extras` | 成功。Python 3.13.18、fastapi 0.141.1、langgraph 1.2.11、langchain-openai 1.6.0、sqlalchemy 2.0.52、arq 0.28.0、rembg 2.0.81、pytest 9.1.1 |
+| 中间件 | compose 起 PostgreSQL 17（7311）、Redis 7（7312） | 健康。Docker Hub 限流，镜像改从 `mirror.gcr.io` 拉取 |
+| 对象存储 | MinIO 拉不到（Docker Hub 拒绝，quay.io、dl.min.io 被网络策略拒绝） | 改用 moto S3 服务（7313）作为 S3 兼容替代 |
+| 迁移 | `uv run alembic upgrade head` | 成功 |
+| 确定性测试 | `uv run pytest` | **160 passed in 64.27s**（规划模型由测试替换为预设输出，不代表真实模型） |
+| 像素评测 | `uv run python -m app.eval app/eval/dataset` | **3/3 passed**：抠图 alpha IoU 1；调色 MAE 0、PSNR 99；投放尺寸 1:1、4:5、9:16 尺寸与完整包含均通过。rembg 首次运行下载 `bria-rmbg-2.0` 模型 |
+| API 与 Worker | `uvicorn app.main:app --port 7302`、`arq app.worker.WorkerSettings`，`IMAGE_PROVIDER=mock` | 启动成功，`GET /api/health` 返回 api、database、storage 全部 ok |
+| Agent 行为评测（确定性部分） | `uv run eval/run_agent_eval.py --base-url http://127.0.0.1:7302 --dataset eval/datasets/agent-behavior-v1 --label upstream-49f6ad8-noplanner --capabilities planner_unavailable,image_exec` | 执行 17 例，**17 例通过**：越权 7、旧流程回归 8、失败 2（规划模型不可用时整轮失败且不派发工具；终态轮次的确认、重试、取消返回 409）。报告在 `eval/reports/upstream-49f6ad8-noplanner-*/` |
+| Agent 行为评测（真实模型） | 需要规划模型 | **未运行**：27 例需要真实规划模型，记为跳过，没有用 Mock 代替。云端网络策略拒绝 `api.deepseek.com` 与 `dashscope.aliyuncs.com`（代理 403），环境中也没有 `DEEPSEEK_API_KEY` |
+| 前端页面 | — | **未运行**：用户 2026-11-05 选择本阶段不做原版前端截图 |
+
+Q2 状态：确定性测试、启动和不依赖模型的 Agent 主路径已验证；真实模型基线待验收。
 
 ## 12. README 与代码的出入（迁移时以代码为准）
 
@@ -224,8 +242,22 @@ uv run python -m app.eval app/eval/dataset # 确定性像素评测
 
 - **必须保持的语义**：模型只提议计划、服务端校验后才执行；多步计划先确认；单步重试与取消；工具参数界面与 Agent 同一套规则；选区与修订号的过期判断；ToolRun 幂等（以 run id 去重、终态跳过）；SSE 先快照后增量；结果先转存自有存储再暴露 URL。
 - **Spring AI 对应**：规划阶段把 22 个工具的 Schema 交给模型生成结构化计划，但**不启用** `ToolCallingAdvisor` 的自动执行，由 Java 计划服务和状态机执行。
-- **可改进点（尚未实现，不得写进简历）**：计划推进集中到 Java 单一状态权威；轮次修订号在确认时校验；运行中任务的取消传播；自动重试与超时策略；Agent 轮次进度事件；Redis 也纳入健康检查；真实模型的 Agent 行为评测。
-- **前端与 Python 服务**：因无授权，新仓库不能复制上游前端和 Python 图像服务，需要独立实现或先取得授权（待用户决定）。
+- **差距与改造方向（均为计划，尚未实现，不得写进简历）**：
+
+| # | 上游现状（代码证据） | 计划由本人在 Java / Spring AI 中完成的工作 |
+| --- | --- | --- |
+| G1 | 业务后端与 Agent 主路径是 Python：FastAPI + LangGraph（`app/agent/graph.py` 只有 plan → verify） | 用 Spring Boot 4.1 重写对外 API、规划、校验、调度、状态持久化与权限，替换 Python 业务后端；Python 只保留图像计算 |
+| G2 | 规划用 `ChatOpenAI.bind_tools` 绑定全部 22 个工具，模型不执行工具（`app/agent/llm.py`） | 用 Spring AI ChatClient 拿结构化计划，**不开启**工具自动执行；规划模型改为 DeepSeek |
+| G3 | 计划依赖总是串到上一步，`depends_on` 由服务端补成线性链 | 保持串行语义；是否支持并行依赖在 B 阶段按需求决定 |
+| G4 | 确认只看步数（大于 1 步才确认），所有工具 `needs_approval=False` | 保留“多步先确认”，评估按工具风险（如覆盖原图、批量）增加确认条件 |
+| G5 | `agent_runs.revision` 记录但确认时不校验，画布在等待确认期间被改也会继续执行 | 确认时校验修订号，过期计划要求重新规划或重新确认 |
+| G6 | 取消只改未开始步骤，运行中的远程调用不中断 | 取消传播到运行中任务（协作式中断），状态与结果一致 |
+| G7 | 重试只重置最后一个失败步骤，`tool_runs.retries` 字段未使用 | 显式重试策略（次数、超时、可重试错误分类）并写入轨迹 |
+| G8 | 轮次进度靠前端 800ms 轮询，SSE 只覆盖单个 ToolRun | 增加轮次级进度事件流，前端不再轮询 |
+| G9 | 健康检查不含 Redis | 健康检查覆盖数据库、Redis、对象存储与图像服务 |
+| G10 | 只有 3 个像素评测，没有“指令 → 计划 → 工具 → 结果”的 Agent 评测，Agent 测试全部是假模型输出 | 用冻结的 agent-behavior-v1 先测原版、再测 Java 版，含真实模型与执行轨迹 |
+- **前端与 Python 服务**：因无授权，新仓库不复制上游前端和 Python 图像服务，独立实现（用户 2026-11-05 确认）。
+- **规划模型**：用户 2026-11-05 决定规划模型改用 DeepSeek（OpenAI 兼容接口，`deepseek-chat`）。Java 版 `application.yml` 用 `${DEEPSEEK_API_KEY}`，密钥放环境变量或未跟踪的 `application-local.yml`。原版基线通过 `eval/tools/planner_proxy.py` 只改配置接到 DeepSeek（见 `eval/README.md`）。图像模型仍是 DashScope，需要 `DASHSCOPE_API_KEY`。
 - **对象存储**：本环境拉不到 `minio/minio:latest`，B 阶段需选定可获取的 S3 兼容存储或固定可用版本，并记录原因。
 - **版本**：Maven Central 当前可见 Spring AI `2.0.0`–`2.0.2`、Spring Boot `4.1.0`–`4.1.2`，B 阶段锁定具体组合并验证兼容。
 
@@ -234,12 +266,12 @@ uv run python -m app.eval app/eval/dataset # 确定性像素评测
 | ID | 状态 | 说明 |
 | --- | --- | --- |
 | Q1 | 已验证 | commit SHA、来源、22 个工具与 34 个接口对照表、许可核查见本文 |
-| Q2 | 待验收 | 依赖已装、PG/Redis 已起；执行上游代码待用户同意；MinIO 与 DashScope 网络受阻 |
+| Q2 | 待验收 | 已验证：pytest 160 通过、像素评测 3/3、API/Worker 启动、确定性 Agent 样例 17/17。待验收：真实模型基线（DeepSeek 网络与密钥）；前端截图按用户选择未做 |
 | Q3 | 设计 | 边界原则已明确，架构图与契约在 B 阶段产出 |
 | Q4 | 设计 | 上游状态转换已梳理（7.3），Java 用例待写 |
 | Q5 | 设计 | 上游单一 `SPECS` 已核实，Java 双入口测试待写 |
 | Q6 | 设计 | 上游数据模型已梳理（第 8 节） |
 | Q7 | 设计 | 上游队列、SSE、取消语义已梳理，故障注入待做 |
-| Q8 | 设计 | 确认上游只有像素评测，需要新建 Agent 行为数据集 |
-| Q9 | 设计 | 待定义程序断言与人工量表 |
+| Q8 | 已实现 | agent-behavior-v1 已冻结（44 例，MANIFEST.sha256）；原版确定性部分已跑，真实模型部分待运行 |
+| Q9 | 已实现 | 程序断言（10 项指标）与图像人工量表见 `RUBRIC.md`；尚无真实模型的评分记录 |
 | Q10 | 设计 | 尚无本人实现，不写任何简历主张 |

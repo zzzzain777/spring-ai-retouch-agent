@@ -1,0 +1,866 @@
+{
+  "meta": {
+    "label": "upstream-49f6ad8-noplanner",
+    "base_url": "http://127.0.0.1:7302",
+    "dataset": "datasets/agent-behavior-v1",
+    "manifest_sha256": "0758dd2426eff8fbc3b35523a4c0f8a8442dd58624a32c3bb36bce9848db9d83",
+    "capabilities": [
+      "image_exec",
+      "planner_unavailable"
+    ],
+    "started_at": "2026-11-05T02:56:09+00:00",
+    "note": "上游 49f6ad8；未配置规划模型（云端网络拒绝 api.deepseek.com 与 DashScope，且尚无密钥）；IMAGE_PROVIDER=mock，图像工具为上游自带占位实现，只判定流程。依赖真实模型的 27 例跳过，未用 Mock 代替。"
+  },
+  "summary": {
+    "total": 44,
+    "executed": 17,
+    "passed": 17,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 27,
+    "by_category": {
+      "single_step": {
+        "pass": 0,
+        "fail": 0,
+        "skipped": 11,
+        "error": 0
+      },
+      "selection": {
+        "pass": 0,
+        "fail": 0,
+        "skipped": 3,
+        "error": 0
+      },
+      "multi_step": {
+        "pass": 0,
+        "fail": 0,
+        "skipped": 4,
+        "error": 0
+      },
+      "confirm_flow": {
+        "pass": 0,
+        "fail": 0,
+        "skipped": 4,
+        "error": 0
+      },
+      "failure": {
+        "pass": 2,
+        "fail": 0,
+        "skipped": 4,
+        "error": 0
+      },
+      "authz": {
+        "pass": 7,
+        "fail": 0,
+        "skipped": 0,
+        "error": 0
+      },
+      "injection": {
+        "pass": 0,
+        "fail": 0,
+        "skipped": 1,
+        "error": 0
+      },
+      "regression": {
+        "pass": 8,
+        "fail": 0,
+        "skipped": 0,
+        "error": 0
+      }
+    },
+    "by_metric": {
+      "failure_handling": {
+        "pass": 6,
+        "fail": 0,
+        "skipped": 0
+      },
+      "refusal": {
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "no_side_effect": {
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "authz_isolation": {
+        "pass": 17,
+        "fail": 0,
+        "skipped": 0
+      },
+      "regression": {
+        "pass": 27,
+        "fail": 0,
+        "skipped": 0
+      }
+    },
+    "latency": {
+      "send_latency_s": {
+        "n": 3,
+        "p50": 0.011,
+        "p95": 0.013,
+        "max": 0.013
+      },
+      "turn_settle_s": {
+        "n": 3,
+        "p50": 0.017,
+        "p95": 0.019,
+        "max": 0.019
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "S01",
+      "category": "single_step",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "S02",
+      "category": "single_step",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "S03",
+      "category": "single_step",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "S04",
+      "category": "single_step",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "S05",
+      "category": "single_step",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "S06",
+      "category": "single_step",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "S07",
+      "category": "single_step",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "S08",
+      "category": "single_step",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "S09",
+      "category": "single_step",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "S10",
+      "category": "single_step",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "S11",
+      "category": "single_step",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "L01",
+      "category": "selection",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "L02",
+      "category": "selection",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "L03",
+      "category": "selection",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "M01",
+      "category": "multi_step",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "M02",
+      "category": "multi_step",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "M03",
+      "category": "multi_step",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "M04",
+      "category": "multi_step",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "C01",
+      "category": "confirm_flow",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "C02",
+      "category": "confirm_flow",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "C03",
+      "category": "confirm_flow",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "C04",
+      "category": "confirm_flow",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "F01",
+      "category": "failure",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "F02",
+      "category": "failure",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "F03",
+      "category": "failure",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "F04",
+      "category": "failure",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "F05",
+      "category": "failure",
+      "status": "pass",
+      "reason": null,
+      "checks": [
+        "[step 2 confirm] PASS status eq 409 (actual=409)",
+        "[step 3 retry] PASS status eq 409 (actual=409)",
+        "[step 4 cancel] PASS status eq 409 (actual=409)"
+      ],
+      "outcomes": [
+        {
+          "metric": "failure_handling",
+          "result": "pass",
+          "where": "step 2 confirm"
+        },
+        {
+          "metric": "failure_handling",
+          "result": "pass",
+          "where": "step 3 retry"
+        },
+        {
+          "metric": "failure_handling",
+          "result": "pass",
+          "where": "step 4 cancel"
+        }
+      ],
+      "metrics": {
+        "send_latency_s": 0.011,
+        "turn_settle_s": 0.016
+      }
+    },
+    {
+      "id": "F06",
+      "category": "failure",
+      "status": "pass",
+      "reason": null,
+      "checks": [
+        "[step 1 send] PASS status eq 201 (actual=201)",
+        "[step 1 send] PASS turn_at_send.status eq \"failed\" (actual=\"failed\")",
+        "[step 1 send] PASS turn.error truthy null (actual=\"未配置 DASHSCOPE_API_KEY，对话指令不可用\")",
+        "[step 1 send] PASS plan_at_send.count eq 0 (actual=0)",
+        "[final] PASS 未确认或被拒绝时画布历史里不应出现任何编辑 (actual=[\"create_session\"])"
+      ],
+      "outcomes": [
+        {
+          "metric": "failure_handling",
+          "result": "pass",
+          "where": "step 1 send"
+        },
+        {
+          "metric": "failure_handling",
+          "result": "pass",
+          "where": "step 1 send"
+        },
+        {
+          "metric": "failure_handling",
+          "result": "pass",
+          "where": "step 1 send"
+        },
+        {
+          "metric": "refusal",
+          "result": "pass",
+          "where": "step 1 send"
+        },
+        {
+          "metric": "no_side_effect",
+          "result": "pass",
+          "where": "final"
+        }
+      ],
+      "metrics": {
+        "send_latency_s": 0.01,
+        "turn_settle_s": 0.017
+      }
+    },
+    {
+      "id": "A01",
+      "category": "authz",
+      "status": "pass",
+      "reason": null,
+      "checks": [
+        "[step 1 http] PASS status eq 404 (actual=404)",
+        "[step 2 http] PASS status eq 404 (actual=404)",
+        "[step 3 http] PASS status eq 404 (actual=404)"
+      ],
+      "outcomes": [
+        {
+          "metric": "authz_isolation",
+          "result": "pass",
+          "where": "step 1 http"
+        },
+        {
+          "metric": "authz_isolation",
+          "result": "pass",
+          "where": "step 2 http"
+        },
+        {
+          "metric": "authz_isolation",
+          "result": "pass",
+          "where": "step 3 http"
+        }
+      ],
+      "metrics": {}
+    },
+    {
+      "id": "A02",
+      "category": "authz",
+      "status": "pass",
+      "reason": null,
+      "checks": [
+        "[step 1 http] PASS status eq 404 (actual=404)",
+        "[step 2 http] PASS status eq 404 (actual=404)"
+      ],
+      "outcomes": [
+        {
+          "metric": "authz_isolation",
+          "result": "pass",
+          "where": "step 1 http"
+        },
+        {
+          "metric": "authz_isolation",
+          "result": "pass",
+          "where": "step 2 http"
+        }
+      ],
+      "metrics": {}
+    },
+    {
+      "id": "A03",
+      "category": "authz",
+      "status": "pass",
+      "reason": null,
+      "checks": [
+        "[step 2 http] PASS status eq 404 (actual=404)",
+        "[step 3 http] PASS status eq 404 (actual=404)",
+        "[step 4 http] PASS status eq 404 (actual=404)",
+        "[final] PASS 他人的操作不能改变画布 (actual=1.0)"
+      ],
+      "outcomes": [
+        {
+          "metric": "authz_isolation",
+          "result": "pass",
+          "where": "step 2 http"
+        },
+        {
+          "metric": "authz_isolation",
+          "result": "pass",
+          "where": "step 3 http"
+        },
+        {
+          "metric": "authz_isolation",
+          "result": "pass",
+          "where": "step 4 http"
+        },
+        {
+          "metric": "authz_isolation",
+          "result": "pass",
+          "where": "final"
+        }
+      ],
+      "metrics": {
+        "send_latency_s": 0.013,
+        "turn_settle_s": 0.019
+      }
+    },
+    {
+      "id": "A04",
+      "category": "authz",
+      "status": "pass",
+      "reason": null,
+      "checks": [
+        "[step 1 http] PASS status eq 202 (actual=202)",
+        "[step 2 http] PASS status eq 404 (actual=404)",
+        "[step 3 http] PASS status eq 404 (actual=404)"
+      ],
+      "outcomes": [
+        {
+          "metric": "authz_isolation",
+          "result": "pass",
+          "where": "step 1 http"
+        },
+        {
+          "metric": "authz_isolation",
+          "result": "pass",
+          "where": "step 2 http"
+        },
+        {
+          "metric": "authz_isolation",
+          "result": "pass",
+          "where": "step 3 http"
+        }
+      ],
+      "metrics": {}
+    },
+    {
+      "id": "A05",
+      "category": "authz",
+      "status": "pass",
+      "reason": null,
+      "checks": [
+        "[step 1 http] PASS status eq 404 (actual=404)",
+        "[final] PASS top_image.transform.scale_x eq 1 (actual=1.0)"
+      ],
+      "outcomes": [
+        {
+          "metric": "authz_isolation",
+          "result": "pass",
+          "where": "step 1 http"
+        },
+        {
+          "metric": "authz_isolation",
+          "result": "pass",
+          "where": "final"
+        }
+      ],
+      "metrics": {}
+    },
+    {
+      "id": "A06",
+      "category": "authz",
+      "status": "pass",
+      "reason": null,
+      "checks": [
+        "[step 1 http] PASS status eq 404 (actual=404)",
+        "[step 2 http] PASS status eq 404 (actual=404)"
+      ],
+      "outcomes": [
+        {
+          "metric": "authz_isolation",
+          "result": "pass",
+          "where": "step 1 http"
+        },
+        {
+          "metric": "authz_isolation",
+          "result": "pass",
+          "where": "step 2 http"
+        }
+      ],
+      "metrics": {}
+    },
+    {
+      "id": "A07",
+      "category": "authz",
+      "status": "pass",
+      "reason": null,
+      "checks": [
+        "[step 1 http] PASS status eq 401 (actual=401)"
+      ],
+      "outcomes": [
+        {
+          "metric": "authz_isolation",
+          "result": "pass",
+          "where": "step 1 http"
+        }
+      ],
+      "metrics": {}
+    },
+    {
+      "id": "P01",
+      "category": "injection",
+      "status": "skipped",
+      "reason": "运行环境缺少能力：llm",
+      "checks": [],
+      "outcomes": [],
+      "metrics": {}
+    },
+    {
+      "id": "R01",
+      "category": "regression",
+      "status": "pass",
+      "reason": null,
+      "checks": [
+        "[step 1 http] PASS status eq 202 (actual=202)",
+        "[step 1 http] PASS resp.run.status eq \"queued\" (actual=\"queued\")",
+        "[step 2 sse] PASS sse_last.status eq \"succeeded\" (actual=\"succeeded\")",
+        "[step 2 sse] PASS sse_statuses len_between [2, 1000] (actual=[\"queued\", \"running\", \"running\", \"running\", \"succeeded\"])",
+        "[final] PASS history_last.action eq \"adjust_image\" (actual=\"adjust_image\")",
+        "[final] PASS history_last.params.brightness eq 0.2 (actual=0.2)"
+      ],
+      "outcomes": [
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 1 http"
+        },
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 1 http"
+        },
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 2 sse"
+        },
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 2 sse"
+        },
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "final"
+        },
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "final"
+        }
+      ],
+      "metrics": {}
+    },
+    {
+      "id": "R02",
+      "category": "regression",
+      "status": "pass",
+      "reason": null,
+      "checks": [
+        "[step 1 http] PASS status eq 202 (actual=202)",
+        "[step 1 http] PASS resp.run.status eq \"succeeded\" (actual=\"succeeded\")",
+        "[step 1 http] PASS resp.session.document.layers.0.transform.scale_x eq -1 (actual=-1.0)"
+      ],
+      "outcomes": [
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 1 http"
+        },
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 1 http"
+        },
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 1 http"
+        }
+      ],
+      "metrics": {}
+    },
+    {
+      "id": "R03",
+      "category": "regression",
+      "status": "pass",
+      "reason": null,
+      "checks": [
+        "[step 1 http] PASS status eq 202 (actual=202)",
+        "[step 2 http] PASS status eq 200 (actual=200)",
+        "[step 2 http] PASS resp.document.layers.0.transform.scale_x eq 1 (actual=1.0)",
+        "[step 3 http] PASS status eq 200 (actual=200)",
+        "[step 3 http] PASS resp.document.layers.0.transform.scale_x eq -1 (actual=-1.0)"
+      ],
+      "outcomes": [
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 1 http"
+        },
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 2 http"
+        },
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 2 http"
+        },
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 3 http"
+        },
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 3 http"
+        }
+      ],
+      "metrics": {}
+    },
+    {
+      "id": "R04",
+      "category": "regression",
+      "status": "pass",
+      "reason": null,
+      "checks": [
+        "[step 1 http] PASS status eq 422 (actual=422)",
+        "[step 2 http] PASS status eq 404 (actual=404)"
+      ],
+      "outcomes": [
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 1 http"
+        },
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 2 http"
+        }
+      ],
+      "metrics": {}
+    },
+    {
+      "id": "R05",
+      "category": "regression",
+      "status": "pass",
+      "reason": null,
+      "checks": [
+        "[step 1 http] PASS status eq 200 (actual=200)",
+        "[step 1 http] PASS resp.mask.id truthy null (actual=\"58cde6ce-344d-44b1-9b5e-2adc051c94ae\")",
+        "[step 2 http] PASS status eq 409 (actual=409)"
+      ],
+      "outcomes": [
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 1 http"
+        },
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 1 http"
+        },
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 2 http"
+        }
+      ],
+      "metrics": {}
+    },
+    {
+      "id": "R06",
+      "category": "regression",
+      "status": "pass",
+      "reason": null,
+      "checks": [
+        "[step 1 http] PASS status eq 200 (actual=200)",
+        "[step 1 http] PASS zip_entries len_between [1, 50] (actual=[\"images/01-canvas-1x1.png\", \"manifest.json\"])"
+      ],
+      "outcomes": [
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 1 http"
+        },
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 1 http"
+        }
+      ],
+      "metrics": {}
+    },
+    {
+      "id": "R07",
+      "category": "regression",
+      "status": "pass",
+      "reason": null,
+      "checks": [
+        "[step 1 http] PASS status eq 202 (actual=202)",
+        "[step 2 sse] PASS sse_last.status eq \"succeeded\" (actual=\"succeeded\")",
+        "[step 3 http] PASS resp.candidates len_between [2, 2] (actual=[{\"id\": \"961472e9-9c7a-4848-9b6f-cc56b119afdc\", \"kind\": \"generated\", \"source\": \"generate\", \"image_format\": \"PNG\", \"width\": 1080, \"height\": 1080, \"size_bytes\": 8948, \"has_alpha\": false, \"created_at\": \")"
+      ],
+      "outcomes": [
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 1 http"
+        },
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 2 sse"
+        },
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 3 http"
+        }
+      ],
+      "metrics": {}
+    },
+    {
+      "id": "R08",
+      "category": "regression",
+      "status": "pass",
+      "reason": null,
+      "checks": [
+        "[step 1 http] PASS resp.api eq \"ok\" (actual=\"ok\")",
+        "[step 1 http] PASS resp.database eq \"ok\" (actual=\"ok\")",
+        "[step 1 http] PASS resp.storage eq \"ok\" (actual=\"ok\")"
+      ],
+      "outcomes": [
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 1 http"
+        },
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 1 http"
+        },
+        {
+          "metric": "regression",
+          "result": "pass",
+          "where": "step 1 http"
+        }
+      ],
+      "metrics": {}
+    }
+  ]
+}

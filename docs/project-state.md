@@ -6,8 +6,8 @@
 
 - 更新时间：2026-11-05（UTC）
 - 上游固定版本：`yuyuanweb/ai-picture-editor@49f6ad8c96740a68b7e6228a47e8e2be6876eb34`
-- 本仓库：`zzzzain777/spring-ai-retouch-agent`（公开）。A 阶段只提交文档，没有实现代码。
-- Java 实现、运行测试、评测结果：**均不存在**。
+- 本仓库：`zzzzain777/spring-ai-retouch-agent`（公开）。A 阶段只提交文档与本人编写的评测材料，没有 Java 实现代码。
+- Java 实现与 Java 测试：**均不存在**。评测结果只有原版的确定性部分。
 
 | 项 | 状态 | 证据 / 说明 |
 | --- | --- | --- |
@@ -17,10 +17,14 @@
 | 功能、工具、接口、数据模型、Agent 状态机梳理 | 已验证 | 22 个工具、34 个接口，见 §4–§8，均对照源码 |
 | 复用方式决定 | 已验证 | 2026-11-05 用户确认：上游无授权，前端与 Python 图像服务独立实现，上游只作行为基线 |
 | 上游依赖安装 | 已验证 | 云端沙箱中 `uv sync --all-extras` 成功 |
-| 上游中间件 | 待验收 | PostgreSQL 17 与 Redis 7 已用 compose 启动并健康；MinIO 镜像不可获取，暂以 moto S3 替代（未使用） |
-| 上游迁移、pytest、API/Worker/前端启动 | 待验收 | 沙箱策略拦截了执行上游代码，需用户明确同意 |
-| 原版真实 DashScope 基线 | 待验收 | 云端网络策略拒绝 DashScope 域名；执行环境未配置 `DASHSCOPE_API_KEY` |
-| 新 GitHub 仓库与首个提交 | 待验收 | 仓库已建；会话的 GitHub 连接账号无该仓库写权限，改用用户本机 git 推送 |
+| 上游中间件 | 已验证 | PostgreSQL 17 与 Redis 7 用 compose 启动并健康；MinIO 镜像不可获取，以 moto S3 作 S3 兼容替代 |
+| 上游迁移、pytest、API/Worker 启动 | 已验证 | 用户同意后运行：alembic 成功；pytest 160 passed（64.27s）；像素评测 3/3；API/Worker 在 `IMAGE_PROVIDER=mock` 下启动，health 全 ok。见 `upstream-baseline.md` §11 |
+| 原版前端页面截图 | 待验收 | 用户 2026-11-05 选择本阶段不做 |
+| 冻结 Agent 行为评测集 v1 | 已实现 | `eval/datasets/agent-behavior-v1/`：44 例、评分口径、两张自绘合成图，`MANIFEST.sha256` 冻结 |
+| 原版确定性 Agent 基线 | 已验证 | 执行 17 例全部通过（越权 7、旧流程回归 8、失败 2），报告 `eval/reports/upstream-49f6ad8-noplanner-*/` |
+| DeepSeek 规划转发器 | 已实现 | `eval/tools/planner_proxy.py`，只用本地假服务验证了转发、换密钥、记轨迹和无密钥拒绝；尚未连过真实 DeepSeek |
+| 原版真实模型基线 | 待验收 | 规划模型改用 DeepSeek。云端网络策略拒绝 `api.deepseek.com`（代理 403），环境未配置 `DEEPSEEK_API_KEY`；27 例记为跳过 |
+| 新 GitHub 仓库与首个提交 | 已验证 | `zzzzain777/spring-ai-retouch-agent@85c0c365477f35b3f59d72e9e40d217f662c08fa`（tree `8fc8e76`），经用户 Mac 本机 git（gh 登录 zzzzain777）推送；云端重新克隆核对 tree 一致 |
 
 ## 环境记录
 
@@ -28,12 +32,13 @@
 - Docker Hub 直连返回 429；`mirror.gcr.io` 可拉取官方镜像；`quay.io`、`dl.min.io` 被拒绝。
 - Maven Central 可访问：Spring AI 最新 `2.0.2`，Spring Boot 最新 `4.1.2`。
 - DashScope：`dashscope.aliyuncs.com`、`dashscope-intl.aliyuncs.com` 均被拒绝（代理 403）。
+- DeepSeek：`api.deepseek.com` 被拒绝（代理 403，2026-11-05 复查）。
 
 ## 阻断
 
-1. **执行上游代码**：跑上游测试与启动（mock 模式）以及原版真实模型基线，需要用户同意在云端沙箱中运行上游代码；运行用的上游代码不进入本仓库。
-2. **DashScope 网络与密钥**（B 阶段真实调用前需要）：在项目所选云端环境的网络设置里放行 `dashscope.aliyuncs.com`，并在 Environment variables 配置 `DASHSCOPE_API_KEY`。密钥不写进 `application.yml` 或任何被跟踪的文件。
-3. **云端推送权限**：后续阶段要从云端直接推送，需要让 Claude 的 GitHub 连接对本仓库有写权限（把 Claude 连接改为 zzzzain777，或给当前连接账号协作者权限）。
+1. **DeepSeek 网络与密钥**（跑原版真实模型基线、B 阶段规划调用前需要）：在项目所选云端环境的网络设置里放行 `api.deepseek.com`，并在 Environment variables 配置 `DEEPSEEK_API_KEY`。本地运行 Java 版时把密钥写进未跟踪的 `application-local.yml`；不写进 `application.yml` 或任何被跟踪的文件。
+2. **图像模型**（换背景、扩图、局部消除等真实出图前需要）：放行 `dashscope.aliyuncs.com` 并配置 `DASHSCOPE_API_KEY`。
+3. **推送方式**：Claude 的 GitHub 连接账号对本仓库无写权限，每次推送经用户 Mac 的 Remote Control 用本机 git 完成，需要用户在 Mac 上确认。
 
 ## 下一步
 
