@@ -34,7 +34,7 @@ public class AssetService {
         UUID id = UUID.randomUUID();
         String key = "users/%s/%s.%s".formatted(userId, id, meta.format().extension());
         storage.put(key, data, meta.format().contentType());
-        return assets.save(new Asset(id, userId, kind, source, key, meta, sha256(data)));
+        return assets.saveAndFlush(new Asset(id, userId, kind, source, key, meta, sha256(data)));
     }
 
     /**
@@ -46,7 +46,7 @@ public class AssetService {
         if (!key.startsWith(requiredPrefix)) {
             throw new IllegalStateException("图像服务返回的对象键不在任务输出前缀下：" + key);
         }
-        return assets.save(new Asset(UUID.randomUUID(), userId, kind, source, key, meta, sha256));
+        return assets.saveAndFlush(new Asset(UUID.randomUUID(), userId, kind, source, key, meta, sha256));
     }
 
     public Optional<Asset> find(UUID userId, UUID assetId) {

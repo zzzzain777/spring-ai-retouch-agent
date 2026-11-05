@@ -1,6 +1,6 @@
 # server
 
-Java 21 + Spring Boot 4.1.2 + Spring AI 2.0.2 后端。当前有工程骨架、数据库迁移、对象存储、健康检查、模型配置入口、登录注册与素材上传；Agent 规划、校验、调度等功能尚未实现。
+Java 21 + Spring Boot 4.1.2 + Spring AI 2.0.2 后端。已实现：登录注册、素材、会话与画布文档、撤销重做、统一工具规格与手动工具接口（9 个文档工具 + 调色）、任务队列 Worker 与 SSE 进度。Agent 规划、校验、调度尚未实现。
 
 ## 配置大模型密钥
 
@@ -29,9 +29,12 @@ cp src/main/resources/application-local.yml.example src/main/resources/applicati
 
 ```bash
 docker compose up -d          # 仓库根目录：PostgreSQL 7311、Redis 7312、MinIO 7313（控制台 7314）
-./mvnw spring-boot:run        # 服务监听 7302，启动时自动执行数据库迁移
+(cd ../image-service && uv sync && uv run python -m app.main &)   # Python 图像服务 7303，只在本机监听
+./mvnw spring-boot:run        # 服务监听 7302，启动时自动执行数据库迁移，并启动任务 Worker
 curl http://127.0.0.1:7302/api/health
 ```
+
+图像服务的共享令牌两边默认都是 `dev-internal-token`，部署时用环境变量 `IMAGE_SERVICE_TOKEN` 覆盖。
 
 ## 使用阿里云 RDS PostgreSQL
 
@@ -50,4 +53,4 @@ curl http://127.0.0.1:7302/api/health
 ./mvnw test
 ```
 
-集成测试用 Testcontainers 启动真实的 PostgreSQL、Redis 和 S3 兼容存储（moto），需要本机有 Docker。测试不调用任何模型。
+集成测试用 Testcontainers 启动真实的 PostgreSQL、Redis 和 S3 兼容存储（moto），需要本机有 Docker。图像工具的测试会用 `uv` 启动真实的 Python 图像服务（`../image-service`）；本机没有 `uv` 时这些测试显示为 skipped。测试不调用任何模型。

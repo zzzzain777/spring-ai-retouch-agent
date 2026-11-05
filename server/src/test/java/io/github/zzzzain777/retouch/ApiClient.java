@@ -47,6 +47,25 @@ public class ApiClient {
         return client;
     }
 
+    /** 读一条 SSE 流直到服务端断开，返回所有 data 帧（按上游格式 "data: {json}"）。 */
+    public java.util.List<Map<String, Object>> sse(String path) throws Exception {
+        var request = java.net.http.HttpRequest.newBuilder(java.net.URI.create(http.getRootUri() + path))
+                .timeout(java.time.Duration.ofSeconds(90));
+        if (cookie != null) {
+            request.header("Cookie", cookie);
+        }
+        var response = java.net.http.HttpClient.newHttpClient().send(request.build(),
+                java.net.http.HttpResponse.BodyHandlers.ofLines());
+        if (response.statusCode() != 200) {
+            throw new IllegalStateException("SSE 状态码 " + response.statusCode());
+        }
+        var mapper = tools.jackson.databind.json.JsonMapper.builder().build();
+        var frames = new java.util.ArrayList<Map<String, Object>>();
+        response.body().filter(line -> line.startsWith("data: "))
+                .forEach(line -> frames.add(mapper.readValue(line.substring(6), Map.class)));
+        return frames;
+    }
+
     /** 不带本客户端 Cookie 的原始请求，用来构造伪造或缺失的会话。 */
     public TestRestTemplate raw() {
         return http;

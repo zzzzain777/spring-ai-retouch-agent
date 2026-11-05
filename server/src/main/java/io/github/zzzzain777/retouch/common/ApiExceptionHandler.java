@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -42,6 +43,12 @@ public class ApiExceptionHandler {
             HandlerMethodValidationException.class})
     ResponseEntity<Map<String, String>> unreadable(Exception exc) {
         return body(HttpStatus.UNPROCESSABLE_CONTENT, "请求参数不合法");
+    }
+
+    /** 会话等带版本号的记录被并发修改：后到的一方失败，由前端刷新后重试，不悄悄覆盖。 */
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    ResponseEntity<Map<String, String>> concurrent(ObjectOptimisticLockingFailureException exc) {
+        return body(HttpStatus.CONFLICT, "数据已被其他操作更新，请刷新后重试");
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)

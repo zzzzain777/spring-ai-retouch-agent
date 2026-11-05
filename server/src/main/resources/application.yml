@@ -61,6 +61,17 @@ retouch:
       text-to-image-model: qwen-image-3.0-pro
       image-edit-model: qwen-image-edit-max
 
+  # Python 图像服务：只在内网监听，Java 是唯一调用方
+  image-service:
+    base-url: ${IMAGE_SERVICE_URL:http://127.0.0.1:7303}
+    token: ${IMAGE_SERVICE_TOKEN:dev-internal-token}
+  # 任务队列 Worker（队列就是 tool_runs 表）
+  worker:
+    enabled: ${WORKER_ENABLED:true}
+    concurrency: 2
+    poll-interval: 500ms
+    recover-interval: 30s
+
 server:
   # 与上游对外端口一致，前端代理与评测集不用改
   port: 7302

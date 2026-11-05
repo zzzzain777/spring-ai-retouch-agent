@@ -16,4 +16,9 @@ public interface AssetRepository extends JpaRepository<Asset, UUID> {
     List<Asset> findByUserIdOrderByCreatedAtDesc(UUID userId, Limit limit);
 
     List<Asset> findByIdInAndUserId(Collection<UUID> ids, UUID userId);
+
+    List<Asset> findByUserIdAndKindNotInOrderByCreatedAtDesc(UUID userId, Collection<AssetKind> kinds, Limit limit);
+
+    List<Asset> findByUserIdAndKindNotInAndIdNotInOrderByCreatedAtDesc(UUID userId, Collection<AssetKind> kinds,
+            Collection<UUID> ids, Limit limit);
 }

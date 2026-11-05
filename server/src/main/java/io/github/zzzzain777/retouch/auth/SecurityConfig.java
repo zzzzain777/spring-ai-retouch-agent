@@ -2,6 +2,7 @@ package io.github.zzzzain777.retouch.auth;
 
 import java.nio.charset.StandardCharsets;
 
+import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -33,6 +34,8 @@ class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(new SessionCookieFilter(tokens, users), AnonymousAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
+                        // SSE 等异步响应结束时的二次分派不再重复鉴权（首次请求已鉴权）
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login", "/api/auth/logout")
                         .permitAll()
                         .requestMatchers("/api/health", "/actuator/health", "/actuator/info", "/error").permitAll()

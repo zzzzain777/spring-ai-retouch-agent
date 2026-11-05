@@ -1,0 +1,23 @@
+[project]
+name = "retouch-image-service"
+version = "0.1.0"
+description = "无状态图像计算服务：只按 Java 服务给的对象键读写图片，不持有业务状态"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.32",
+    "pillow>=11.0",
+    "numpy>=2.1",
+    "boto3>=1.35",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "httpx>=0.27",
+    "moto>=5.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
