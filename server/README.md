@@ -29,9 +29,12 @@ cp src/main/resources/application-local.yml.example src/main/resources/applicati
 
 ```bash
 ./mvnw test -Dtest=RealPlannerCheck -Dretouch.real-planner=true
+./mvnw test -Dtest=RealPlannerCheck -Dretouch.real-planner=true -Dretouch.planner.follow-up-rounds=1   # 追问一轮
 ```
 
-经完整 HTTP 接口发三条指令（单步、多步、无关请求），规划模型用上面配置的真实密钥，中间件用 Testcontainers。只断言集成打通：拿到结构化计划、单步直接执行、多步确认前不派发、无关请求没有计划。模型给出的工具与 token 用量写进 `target/real-planner-check.json`。这不是评测，规划质量以 `eval/` 下冻结评测集的结果为准。默认的 `./mvnw test` 不运行它。
+经完整 HTTP 接口发 5 条指令（1 条单步、3 条多步、1 条无关请求），规划模型用上面配置的真实密钥，中间件用 Testcontainers。只断言集成打通：拿到结构化计划、单步直接执行、多步停在待确认且不派发、无关请求没有计划。每条的工具、轮数与 token 用量先写进 `target/real-planner-check-r<轮数>.json`，再断言。这不是评测，规划质量以 `eval/` 下冻结评测集的结果为准。默认的 `./mvnw test` 不运行它。
+
+`retouch.planner.follow-up-rounds`（环境变量 `RETOUCH_PLANNER_FOLLOW_UP_ROUNDS`，默认 0）：拿到工具调用后最多追问几轮，让一次只给一步的模型补全剩余步骤。追问时回给模型的是“已记录、尚未执行”，工具不会执行。
 
 ## 本地运行
 

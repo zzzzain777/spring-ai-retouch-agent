@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 
 from app import imaging, storage
 from app.config import settings
+from app.ops import mask as masks
 from app.ops.adjust import adjust
 
 logger = logging.getLogger("image-service")
@@ -54,6 +55,23 @@ class AdjustIn(BaseModel):
     input_key: str
     output_prefix: str
     params: AdjustParams = AdjustParams()
+
+
+class PointIn(BaseModel):
+    x: float = Field(ge=0, le=1)
+    y: float = Field(ge=0, le=1)
+
+
+class MaskIn(BaseModel):
+    """选区遮罩。strokes 与 points 二选一；base_key 是已有选区的遮罩，给了就合并。"""
+
+    output_prefix: str
+    width: int = Field(ge=1, le=12000)
+    height: int = Field(ge=1, le=12000)
+    strokes: list[list[PointIn]] = []
+    points: list[PointIn] = []
+    radius: float = Field(default=0.03, ge=0.005, le=0.12)
+    base_key: str | None = None
 
 
 def _authorize(token: str | None, run_id: str | None, attempt: str | None, output_prefix: str) -> None:
@@ -97,6 +115,32 @@ def adjust_op(
     output = imaging.describe(key, result, data)
     logger.info("adjust run_id=%s attempt=%s %.0f ms", x_run_id, x_attempt, (time.perf_counter() - started) * 1000)
     return {"outputs": [output.as_json()]}
+
+
+@app.post("/v1/ops/mask")
+def mask_op(
+    body: MaskIn,
+    x_internal_token: Annotated[str | None, Header()] = None,
+    x_run_id: Annotated[str | None, Header()] = None,
+    x_attempt: Annotated[str | None, Header()] = None,
+) -> dict:
+    _authorize(x_internal_token, x_run_id, x_attempt, body.output_prefix)
+    size = (body.width, body.height)
+    if body.strokes and any(body.strokes):
+        mask = masks.strokes(size, [[(p.x, p.y) for p in stroke] for stroke in body.strokes], body.radius)
+    elif body.points:
+        mask = masks.points(size, [(p.x, p.y) for p in body.points])
+    else:
+        raise OpError(422, "选区为空")
+    if body.base_key:
+        mask = masks.union(masks.to_luma(_read(body.base_key), size), mask)
+    if masks.coverage(mask) == 0:
+        raise OpError(422, "选区为空")
+    result = masks.overlay(mask)
+    data = imaging.encode_png(result)
+    key = body.output_prefix + "mask.png"
+    storage.put(key, data, "image/png")
+    return {"outputs": [imaging.describe(key, result, data).as_json()]}
 
 
 def main() -> None:

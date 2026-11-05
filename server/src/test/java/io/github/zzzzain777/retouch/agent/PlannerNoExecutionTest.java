@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
@@ -25,8 +26,12 @@ class PlannerNoExecutionTest {
     private final ScriptedChatModel model = new ScriptedChatModel();
 
     private SpringAiPlanner planner(String apiKey) {
+        return planner(apiKey, 0);
+    }
+
+    private SpringAiPlanner planner(String apiKey, int followUpRounds) {
         return new SpringAiPlanner(model, registry, new ToolSchemas(registry), new PlannerPrompt(registry), apiKey,
-                "deepseek-chat");
+                "deepseek-chat", followUpRounds);
     }
 
     @Test
@@ -55,6 +60,37 @@ class PlannerNoExecutionTest {
         assertThat(options.getToolCallbacks().getFirst().getToolDefinition().inputSchema()).contains("\"type\":\"object\"");
         assertThat(prompt.getSystemMessage().getText()).endsWith("当前画布：画布 640×480；修订号 3");
         assertThat(prompt.getUserMessage().getText()).isEqualTo("调亮");
+    }
+
+    @Test
+    void followUpRoundCollectsTheRemainingStepsWithoutExecutingAnything() {
+        model.thenCalls(Map.entry("flip_layer", Map.of("direction", "vertical")))
+                .thenCalls(Map.entry("set_layer_opacity", Map.of("opacity", 0.6)));
+
+        var proposal = planner("test-key", 1).plan("先上下翻转，然后把透明度改成 60%", "画布 100×100");
+
+        assertThat(proposal.calls()).extracting(Planner.Call::tool).containsExactly("flip_layer", "set_layer_opacity");
+        assertThat(proposal.trace().rounds()).isEqualTo(2);
+        assertThat(proposal.trace().promptTokens()).isEqualTo(200);
+        var followUp = model.received().get(1).getInstructions();
+        assertThat(followUp.getLast()).isInstanceOf(ToolResponseMessage.class);
+        assertThat(((ToolResponseMessage) followUp.getLast()).getResponses()).singleElement()
+                .satisfies(response -> assertThat(response.responseData()).isEqualTo(SpringAiPlanner.RECORDED));
+    }
+
+    @Test
+    void followUpStopsWhenTheModelHasNothingToAddOrRepeatsItself() {
+        model.thenCalls(Map.entry("flip_layer", Map.of("direction", "horizontal"))).thenText("好");
+        assertThat(planner("test-key", 3).plan("左右镜像", "画布").calls()).hasSize(1);
+        assertThat(model.received()).hasSize(2);
+
+        model.reset();
+        model.thenCalls(Map.entry("flip_layer", Map.of("direction", "horizontal")))
+                .thenCalls(Map.entry("flip_layer", Map.of("direction", "horizontal")));
+        var repeated = planner("test-key", 3).plan("左右镜像", "画布");
+        assertThat(repeated.calls()).hasSize(1);
+        assertThat(repeated.trace().rounds()).isEqualTo(2);
+        assertThat(model.received()).hasSize(2);
     }
 
     @Test

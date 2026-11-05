@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 import io.github.zzzzain777.retouch.asset.AssetService;
+import io.github.zzzzain777.retouch.selection.SelectionStore;
 import io.github.zzzzain777.retouch.session.EditSession;
 import io.github.zzzzain777.retouch.session.LayerDocument;
 import io.github.zzzzain777.retouch.session.LayerDocument.Layer;
@@ -19,10 +20,12 @@ public class CanvasSummary {
 
     private final SessionService sessions;
     private final AssetService assets;
+    private final SelectionStore selections;
 
-    public CanvasSummary(SessionService sessions, AssetService assets) {
+    public CanvasSummary(SessionService sessions, AssetService assets, SelectionStore selections) {
         this.sessions = sessions;
         this.assets = assets;
+        this.selections = selections;
     }
 
     public String describe(EditSession record) {
@@ -35,8 +38,10 @@ public class CanvasSummary {
         parts.add("修订号 " + record.getRevision());
         assets.find(record.getUserId(), record.getCurrentAssetId()).ifPresent(current -> parts.add(
                 "当前图 " + current.getImageFormat() + (current.isHasAlpha() ? "，带透明通道" : "")));
-        // 选区在 B8 接入；接入前一律按无选区描述
-        parts.add("当前没有选区，区域类工具会作用在整个目标图层");
+        selections.get(record.getId(), record.getRevision()).ifPresentOrElse(stored -> parts.add(
+                (stored.markers().isEmpty() ? "已有笔刷选区" : "已有选区，" + stored.markers().size() + " 个标点")
+                        + "（选区只限定区域、不限定图层；同时给了 layer_id 时取两者交集）"),
+                () -> parts.add("当前没有选区，区域类工具会作用在整个目标图层"));
         return String.join("；", parts);
     }
 

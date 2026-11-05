@@ -7,15 +7,15 @@ import java.util.List;
  * 不含密钥与完整提示词。
  */
 public record PlannerTrace(String model, Long elapsedMs, Integer promptTokens, Integer completionTokens,
-        String finishReason, Integer toolsOffered, List<Planner.Call> toolCalls, String text, String rejected,
-        String failure) {
+        String finishReason, Integer toolsOffered, Integer rounds, List<Planner.Call> toolCalls, String text,
+        String rejected, String failure) {
 
     public PlannerTrace withRejected(String reason) {
-        return new PlannerTrace(model, elapsedMs, promptTokens, completionTokens, finishReason, toolsOffered,
+        return new PlannerTrace(model, elapsedMs, promptTokens, completionTokens, finishReason, toolsOffered, rounds,
                 toolCalls, text, reason, failure);
     }
 
     public static PlannerTrace failed(String model, long elapsedMs, String failure) {
-        return new PlannerTrace(model, elapsedMs, null, null, null, null, List.of(), null, null, failure);
+        return new PlannerTrace(model, elapsedMs, null, null, null, null, null, List.of(), null, null, failure);
     }
 }

@@ -74,6 +74,9 @@ retouch:
   agent:
     # 兜底对账：超过 30 秒没更新的执行中轮次，按 tool_runs 重新推进（Worker 回调丢失或进程重启时）
     reconcile-interval: 30s
+  planner:
+    # 拿到工具调用后最多追问几轮补全剩余步骤（回给模型“已记录、未执行”，工具不会执行）；0 表示只问一轮
+    follow-up-rounds: ${RETOUCH_PLANNER_FOLLOW_UP_ROUNDS:0}
 
 server:
   # 与上游对外端口一致，前端代理与评测集不用改

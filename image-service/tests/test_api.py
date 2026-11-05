@@ -69,3 +69,28 @@ def test_missing_or_broken_input_is_a_readable_error(s3):
     storage.put("users/u1/broken.png", b"not an image", "image/png")
     broken = dict(missing, input_key="users/u1/broken.png")
     assert client.post("/v1/ops/adjust", json=broken, headers=_headers()).json() == {"error": "输入图片无法解码"}
+
+
+def test_mask_from_strokes_merges_with_the_previous_selection(s3):
+    client = TestClient(app)
+    first = {"output_prefix": f"runs/{RUN}/1/", "width": 80, "height": 60,
+             "strokes": [[{"x": 0.1, "y": 0.5}, {"x": 0.3, "y": 0.5}]], "radius": 0.1}
+    response = client.post("/v1/ops/mask", json=first, headers=_headers())
+    assert response.status_code == 200
+    (output,) = response.json()["outputs"]
+    assert output["key"] == f"runs/{RUN}/1/mask.png"
+    assert (output["width"], output["height"], output["has_alpha"]) == (80, 60, True)
+
+    second = {"output_prefix": f"runs/{RUN}/2/", "width": 80, "height": 60,
+              "strokes": [[{"x": 0.9, "y": 0.5}]], "radius": 0.1, "base_key": output["key"]}
+    merged = client.post("/v1/ops/mask", json=second, headers=_headers(attempt="2")).json()["outputs"][0]
+    alpha = Image.open(io.BytesIO(storage.get(merged["key"]))).getchannel("A")
+    assert alpha.getpixel((15, 30)) == 255 and alpha.getpixel((71, 30)) == 255 and alpha.getpixel((45, 5)) == 0
+
+
+def test_empty_mask_is_rejected(s3):
+    client = TestClient(app)
+    body = {"output_prefix": f"runs/{RUN}/1/", "width": 80, "height": 60, "strokes": [[]]}
+    response = client.post("/v1/ops/mask", json=body, headers=_headers())
+    assert response.status_code == 422
+    assert response.json() == {"error": "选区为空"}

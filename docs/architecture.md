@@ -53,14 +53,16 @@ POST /messages ─▶ 构造画布摘要 ─▶ Spring AI ChatClient（携带全
                                    关闭 ToolCallingAdvisor 自动注册）
                 ─▶ 读取模型返回的 tool_calls 作为“提议”，并把模型名、耗时、token、原样调用写进轨迹
                 ─▶ PlanValidator：工具存在 → 去掉服务端填写的隐藏参数 → 参数校验（与手动接口同一入口）
-                    → 补全 id 与线性依赖 → 依赖存在性与环检测 → 步数 ≤ 8 →（B8：钉住选区遮罩）
+                    → 补全 id 与线性依赖 → 依赖存在性与环检测 → 步数 ≤ 8 → 钉住选区遮罩
                 ─▶ 持久化 agent_turns（含规划时修订号与轨迹）
                 ─▶ 单步：立即派发；多步：status=queued 等确认；无计划：succeeded + 一句答复
 ```
 
 - **规划阶段不执行工具**：Spring AI 2.0.2 的 `ToolCallingChatOptions` 已没有 `internalToolExecutionEnabled` 选项，工具执行改由 ChatClient 自动加入的 `ToolCallingAdvisor` 负责。规划调用显式关闭它的自动注册（`AdvisorParams.toolCallingAdvisorAutoRegister(false)`），模型返回的 tool_calls 原样交回 Java；注册给模型的工具只有定义没有实现，回调一旦被调用就抛异常。`PlannerNoExecutionTest` 守住这两点，并有对照用例证明不关掉时 Spring AI 确实会去执行。
 - **工具 Schema**：由 `ToolSpec` 的参数类型用 victools 生成（字段名下划线、必填与取值范围取 Bean Validation 注解、枚举取接口取值），与参数校验同源；隐藏参数不出现在 Schema 里，模型即使给了也会在校验前删掉。
-- **提示词**：本项目自写。通用规则固定；工具选择规则只收录所涉工具都已登记的条目，不引导模型调用尚未实现的工具。
+- **提示词**：本项目自写。通用规则固定；工具选择规则只收录所涉工具都已登记的条目，不引导模型调用尚未实现的工具。多步指令要求模型在一次回复里按顺序给出全部工具调用：B7 在 Mac 上用真实 DeepSeek 检查时，“先上下翻转，然后把透明度改成 60%”只返回了翻转一步，原规则“依次调用”被模型理解成等结果再给下一步。
+- **可选追问一轮**：`retouch.planner.follow-up-rounds`（默认 0）。大于 0 时，拿到工具调用后回给模型一条“已记录、尚未执行”的工具结果，请它补上剩余步骤或回复“好”；模型原样重复上一轮视为没有更多步骤；累计不超过 8 步，token 合计记进轨迹（`rounds` 字段）。工具始终没有被执行，追问只多一次模型请求。默认值以真实模型检查结果为准。
+- **选区钉入**：规划时把 Redis 里当前修订号的选区写进画布摘要（“已有笔刷选区”“已有选区，n 个标点”或“当前没有选区”）；计划校验通过后，`usesMask` 的步骤若没有 `mask_asset_id`，填入该选区的遮罩素材 id。之后再改选区不影响已生成的计划；修订号不一致或 Redis 不可用视为没有选区，区域工具作用于整层。
 - **执行只由 Java 显式调度**：推进计划时先锁轮次行（`SELECT … FOR UPDATE`），按 `tool_runs` 对账步骤状态，再派发就绪步骤；文档工具同步完成后立即推进下一步，图像工具完成后由 Worker 回调推进。派发经 `ToolService.submit`，它总在独立事务里建任务与改文档（`REQUIRES_NEW`），工具失败不会把外层的计划更新标成只能回滚。
 - **确认、取消、重试**遵循上游语义：确认把等待中的步骤放行；取消把未开始的步骤标为 canceled、排队中的任务直接取消；重试把最后一个失败步骤重置为 pending 再推进，新建一条任务（`step_attempt` 递增）。终态轮次上的确认、取消、重试返回 409。
 - **相对上游的改动**（对应 `upstream-baseline.md` §13）：
@@ -141,4 +143,5 @@ Java 崩溃 → 重启扫描到租约过期的 running → 幂等工具重排、
 ## 9. 配置与密钥
 
 - `server/src/main/resources/application.yml`：规划模型（OpenAI 兼容接口，默认 DeepSeek，可切 DashScope 兼容模式）与 DashScope 图像模型的地址、模型名，密钥只写 `${DEEPSEEK_API_KEY:}`、`${DASHSCOPE_API_KEY:}`。
+- **为什么规划用 DeepSeek 而不是 DashScope**：项目说明里原写的是 DashScope 规划。2026-11-05 用户在 A 阶段选定 DeepSeek 作为规划模型与评测基线（已在 Mac 上接通，原版基线也用它测，两边可比）；DashScope 只用于图像模型。接入走 Spring AI 自带的 OpenAI 兼容适配器：Spring AI Alibaba 的 DashScope starter 目前只有面向 Boot 4.0 的预览版，与本项目的 Boot 4.1.2 不兼容。切换到 DashScope 兼容模式只需改 `spring.ai.openai.base-url` 与模型名，代码不变。
 - 真实密钥放被 `.gitignore` 忽略的 `application-local.yml`，或环境变量。Java 是配置的唯一来源：调用 Python 时把 DashScope 密钥放在内网请求头 `X-DashScope-Key` 里转交，Python 不落盘、不写日志；Python 也可以直接读自己的环境变量 `DASHSCOPE_API_KEY`（优先级更低）。

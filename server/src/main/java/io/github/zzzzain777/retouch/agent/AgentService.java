@@ -22,6 +22,7 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 
 import io.github.zzzzain777.retouch.common.ApiException;
+import io.github.zzzzain777.retouch.selection.SelectionStore;
 import io.github.zzzzain777.retouch.session.EditSession;
 import io.github.zzzzain777.retouch.session.SessionService;
 import io.github.zzzzain777.retouch.tool.RunListener;
@@ -66,12 +67,14 @@ public class AgentService implements RunListener {
     private final PlanValidator validator;
     private final ToolService tools;
     private final ToolRegistry registry;
+    private final SelectionStore selections;
     private final TransactionTemplate tx;
     private final JsonMapper json;
 
     public AgentService(AgentTurnRepository turns, ToolRunRepository runs, SessionService sessions,
             CanvasSummary canvas, Planner planner, PlanValidator validator, ToolService tools, ToolRegistry registry,
-            PlatformTransactionManager transactions, JsonMapper json) {
+            SelectionStore selections, PlatformTransactionManager transactions, JsonMapper json) {
+        this.selections = selections;
         this.turns = turns;
         this.runs = runs;
         this.sessions = sessions;
@@ -110,7 +113,7 @@ public class AgentService implements RunListener {
             trace = proposal.trace();
             reply = proposal.text();
             try {
-                steps = validator.validate(proposal.calls());
+                steps = pinSelection(record, validator.validate(proposal.calls()));
             } catch (PlanValidator.Rejected rejected) {
                 steps = List.of();
                 reply = "这一步暂时执行不了：" + rejected.getMessage();
@@ -238,6 +241,28 @@ public class AgentService implements RunListener {
 
     public List<PlanStep> steps(AgentTurn turn) {
         return read(turn);
+    }
+
+    /**
+     * 把规划时的选区遮罩钉进每个需要遮罩的步骤。第一步执行后修订号就变了、选区随之失效，
+     * 显式的遮罩 id 让同一轮的后续步骤仍作用在用户选的那块区域上。
+     */
+    private List<PlanStep> pinSelection(EditSession record, List<PlanStep> steps) {
+        var stored = selections.get(record.getId(), record.getRevision());
+        if (stored.isEmpty()) {
+            return steps;
+        }
+        String mask = stored.get().maskAssetId().toString();
+        return steps.stream().map(step -> {
+            boolean wantsMask = registry.find(step.tool()).map(ToolSpec::usesMask).orElse(false);
+            if (!wantsMask || step.params().get("mask_asset_id") != null) {
+                return step;
+            }
+            var params = new java.util.LinkedHashMap<>(step.params());
+            params.put("mask_asset_id", mask);
+            return new PlanStep(step.id(), step.tool(), step.label(), params, step.dependsOn(), step.runId(),
+                    step.status(), step.approved(), step.attempt());
+        }).toList();
     }
 
     // ---- 推进 ----
