@@ -21,6 +21,8 @@ import io.github.zzzzain777.retouch.session.SessionService;
 import io.github.zzzzain777.retouch.session.SessionViews;
 import io.github.zzzzain777.retouch.session.SessionViews.SessionDetailOut;
 import io.github.zzzzain777.retouch.tool.RunViews.RunOut;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 @RestController
 class ToolController {
@@ -33,7 +35,8 @@ class ToolController {
 
     /** 新增接口：前端按它生成工具面板，内容与 Agent 看到的工具规格同源。 */
     record ToolOut(String name, String label, String description, ToolSpec.Execution execution,
-            boolean sessionRequired, boolean usesMask, boolean needsApproval, Set<String> agentHidden) {
+            boolean sessionRequired, boolean usesMask, boolean needsApproval, Set<String> agentHidden,
+            JsonNode parameters) {
     }
 
     private final ToolService tools;
@@ -42,15 +45,19 @@ class ToolController {
     private final RunViews runViews;
     private final SessionService sessions;
     private final SessionViews sessionViews;
+    private final ToolSchemas schemas;
+    private final JsonMapper json;
 
     ToolController(ToolService tools, ToolRegistry registry, ToolRunRepository runs, RunViews runViews,
-            SessionService sessions, SessionViews sessionViews) {
+            SessionService sessions, SessionViews sessionViews, ToolSchemas schemas, JsonMapper json) {
         this.tools = tools;
         this.registry = registry;
         this.runs = runs;
         this.runViews = runViews;
         this.sessions = sessions;
         this.sessionViews = sessionViews;
+        this.schemas = schemas;
+        this.json = json;
     }
 
     @PostMapping("/api/sessions/{sessionId}/tools")
@@ -70,7 +77,8 @@ class ToolController {
     @GetMapping("/api/tools")
     List<ToolOut> list() {
         return registry.all().stream().map(spec -> new ToolOut(spec.name(), spec.label(), spec.description(),
-                spec.execution(), spec.sessionRequired(), spec.usesMask(), spec.needsApproval(), spec.agentHidden()))
+                spec.execution(), spec.sessionRequired(), spec.usesMask(), spec.needsApproval(), spec.agentHidden(),
+                json.readTree(schemas.schema(spec.name()))))
                 .toList();
     }
 }

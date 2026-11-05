@@ -50,6 +50,11 @@ class ToolTests {
                 .orElseThrow();
         assertThat(scale).containsEntry("execution", "document").containsEntry("session_required", true);
         assertThat((List) scale.get("agent_hidden")).containsExactlyInAnyOrder("x", "y");
+        // 前端表单与规划模型用同一份参数 Schema，隐藏参数两边都看不到
+        Map parameters = (Map) scale.get("parameters");
+        assertThat(parameters).containsEntry("type", "object");
+        assertThat((Map) parameters.get("properties")).containsKey("layer_id").doesNotContainKeys("x", "y");
+        assertThat(tools).hasSize(22);
     }
 
     @Test

@@ -8,7 +8,7 @@
 
 | 组件 | 端口 | 职责 | 不负责 |
 | --- | --- | --- | --- |
-| 前端（React + Vite，独立实现） | 7301 | 画布展示、手动工具面板、对话与计划确认、选区笔刷与点选、SSE 进度展示 | 不做业务校验，不直连 Python 或存储写入 |
+| 前端 `web/`（React + Vite + TypeScript，独立实现） | 7301 | 画布展示、手动工具面板、对话与计划确认、选区笔刷与点选、SSE 进度展示 | 不做业务校验，不直连 Python 或存储写入 |
 | Java 服务 `server/`（Spring Boot 4.1.2 + Spring AI 2.0.2） | 7302 | **唯一对外 API**；登录与权限；素材、会话、画布文档、历史；统一工具规格与参数校验；Agent 规划、计划校验、确认、调度、取消、重试；任务队列与 SSE；所有状态持久化 | 不做像素计算，不直接调图像模型 |
 | Python 图像服务 `image-service/`（独立实现） | 7303，仅内网 | 无状态的图像计算：渲染合成、调色、抠图、遮罩栅格化（点选暂以圆形区域代替，未接分割模型）、投放尺寸、拆层；调用 DashScope 图像接口 | 不持有业务状态，不做用户鉴权，不决定执行顺序 |
 | PostgreSQL 17 | 7311 | 业务数据与任务队列的权威存储 | — |
@@ -44,7 +44,7 @@ Java 里有且只有一份工具注册表 `ToolRegistry`，每个工具一个 `T
 | `timeout`、`maxAttempts`、`idempotent` | 超时与重试策略；只有幂等工具在中断后自动重排 |
 | `needsApproval` | 单步也要确认的高风险工具（默认与上游一致为 false，按 B 阶段评估开启） |
 
-手动接口 `POST /api/sessions/{id}/tools` 与 Agent 计划执行都走 `ToolService.submit(user, tool, params, sessionId)`：同一套参数校验、同一套资源授权（会话、图层、素材都按当前用户校验）、同一套执行器。前端可读 `GET /api/tools`（新增）拿到规格生成表单。
+手动接口 `POST /api/sessions/{id}/tools` 与 Agent 计划执行都走 `ToolService.submit(user, tool, params, sessionId)`：同一套参数校验、同一套资源授权（会话、图层、素材都按当前用户校验）、同一套执行器。前端读 `GET /api/tools`（新增）拿到规格与参数 JSON Schema（`parameters`，与交给规划模型的同源）生成工具表单，不另写参数规则。
 
 ### 3.1 22 个工具落在哪里（B9 后）
 
