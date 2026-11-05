@@ -1,6 +1,6 @@
 # server
 
-Java 21 + Spring Boot 4.1.2 + Spring AI 2.0.2 后端。当前只有工程骨架和模型配置入口，Agent 规划、校验、调度等功能尚未实现。
+Java 21 + Spring Boot 4.1.2 + Spring AI 2.0.2 后端。当前有工程骨架、数据库迁移、对象存储、健康检查、模型配置入口、登录注册与素材上传；Agent 规划、校验、调度等功能尚未实现。
 
 ## 配置大模型密钥
 
@@ -20,10 +20,29 @@ cp src/main/resources/application-local.yml.example src/main/resources/applicati
 ## 检查密钥能不能用
 
 ```bash
-./mvnw spring-boot:run -Dspring-boot.run.arguments=--retouch.model-check.enabled=true
+./scripts/model-check.sh
 ```
 
-会真实调用一次规划模型（纯文本，不带任何工具），打印回复、模型名、token 用量和耗时，然后退出。退出码 0 表示通过，1 表示调用失败，2 表示没配密钥。
+会真实调用一次规划模型（纯文本，不带任何工具），打印回复、模型名、token 用量和耗时，然后退出；退出码非 0 表示失败。这个检查是独立的小程序，不需要数据库、Redis 或对象存储。
+
+## 本地运行
+
+```bash
+docker compose up -d          # 仓库根目录：PostgreSQL 7311、Redis 7312、MinIO 7313（控制台 7314）
+./mvnw spring-boot:run        # 服务监听 7302，启动时自动执行数据库迁移
+curl http://127.0.0.1:7302/api/health
+```
+
+## 使用阿里云 RDS PostgreSQL
+
+业务数据也可以放在阿里云 RDS PostgreSQL（例如免费试用实例），Redis 和对象存储仍在本机。
+
+1. 在 RDS 控制台创建一个账号，再创建数据库 `retouch`，把它的所有者（授权账号）设为这个账号。服务启动时由 Flyway 在这个库里建表，账号需要在 `public` 模式里建表的权限，数据库所有者默认就有。
+2. 白名单里加上运行本服务那台电脑的公网 IP，并开通外网地址。
+3. 在 `application-local.yml` 里填 `spring.datasource` 的地址、账号、密码（示例文件里有注释好的一段）。也可以用环境变量 `DATABASE_URL`、`DATABASE_USER`、`DATABASE_PASSWORD`。
+4. 只启动本机的 Redis 和对象存储：`docker compose up -d redis minio`，再 `./mvnw spring-boot:run`，用 `curl http://127.0.0.1:7302/api/health` 确认 `database` 为 `ok`。
+
+`sslmode=prefer` 在 RDS 未开启 SSL 时会走明文连接（密码认证本身不明文传输，但查询数据是明文的）；在 RDS 控制台开启 SSL 后改成 `sslmode=require`。测试始终用 Testcontainers 启动的临时数据库，不连 RDS。
 
 ## 构建与测试
 
@@ -31,4 +50,4 @@ cp src/main/resources/application-local.yml.example src/main/resources/applicati
 ./mvnw test
 ```
 
-测试只验证配置能读取、应用在没有真实密钥时也能启动，不调用模型。
+集成测试用 Testcontainers 启动真实的 PostgreSQL、Redis 和 S3 兼容存储（moto），需要本机有 Docker。测试不调用任何模型。

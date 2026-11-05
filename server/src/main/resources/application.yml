@@ -9,6 +9,27 @@ spring:
     import:
       - optional:classpath:application-local.yml
       - optional:file:./application-local.yml
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://127.0.0.1:7311/retouch}
+    username: ${DATABASE_USER:retouch}
+    password: ${DATABASE_PASSWORD:retouch}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  jackson:
+    # 与上游契约一致：字段名用下划线（image_format、created_at…）
+    property-naming-strategy: SNAKE_CASE
+  servlet:
+    multipart:
+      # 比业务上限 20 MB 略大，让超限请求走到业务校验并返回 413 与中文提示
+      max-file-size: 21MB
+      max-request-size: 22MB
+  data:
+    redis:
+      url: ${REDIS_URL:redis://127.0.0.1:7312/0}
   ai:
     # 规划模型：OpenAI 兼容接口。默认 DeepSeek；改用 DashScope 通义千问时见 application-local.yml.example
     openai:
@@ -19,6 +40,19 @@ spring:
         temperature: 0
 
 retouch:
+  auth:
+    # 本地开发默认值；部署时必须用环境变量覆盖
+    jwt-secret: ${JWT_SECRET:dev-only-jwt-secret-change-me-at-least-32-bytes}
+    ttl: 24h
+    secure-cookie: ${COOKIE_SECURE:false}
+  storage:
+    endpoint: ${S3_ENDPOINT:http://127.0.0.1:7313}
+    region: ${S3_REGION:us-east-1}
+    bucket: ${S3_BUCKET:retouch}
+    access-key: ${S3_ACCESS_KEY:retouch}
+    secret-key: ${S3_SECRET_KEY:retouch-secret}
+    # 签名 URL 有效期
+    url-ttl: 15m
   # 图像模型（换背景、扩图、局部消除等）走 DashScope 原生图像接口，由图像服务调用
   image:
     dashscope:
@@ -26,12 +60,10 @@ retouch:
       base-url: https://dashscope.aliyuncs.com
       text-to-image-model: qwen-image-3.0-pro
       image-edit-model: qwen-image-edit-max
-  # 连通性检查：--retouch.model-check.enabled=true 时启动后真实调用一次规划模型，打印结果后退出
-  model-check:
-    enabled: false
 
 server:
-  port: 8080
+  # 与上游对外端口一致，前端代理与评测集不用改
+  port: 7302
 
 management:
   endpoints:

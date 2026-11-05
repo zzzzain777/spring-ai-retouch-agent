@@ -4,6 +4,18 @@
 #   cp src/main/resources/application-local.yml.example src/main/resources/application-local.yml
 
 spring:
+  # 数据库：不写这一段就连本机 docker compose 里的 PostgreSQL（7311）。
+  # 改用阿里云 RDS PostgreSQL 时取消注释并填写（步骤见 server/README.md）：
+  # datasource:
+  #   url: jdbc:postgresql://在这里填RDS外网地址:5432/retouch?sslmode=prefer
+  #   username: 在这里填RDS账号
+  #   password: 在这里填该账号的密码
+
+  # Redis：不写就连 docker compose 里的 7312。用本机自己装的 Redis（默认 6379）时取消注释：
+  # data:
+  #   redis:
+  #     url: redis://127.0.0.1:6379/0
+
   ai:
     openai:
       # 方式一：DeepSeek（默认）

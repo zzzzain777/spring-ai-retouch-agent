@@ -1,0 +1,42 @@
+# 本地开发用中间件。端口与上游一致，方便对照评测。
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: retouch
+      POSTGRES_USER: retouch
+      POSTGRES_PASSWORD: retouch
+    ports:
+      - "127.0.0.1:7311:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U retouch -d retouch"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:7312:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  # 云端沙箱拉不到 MinIO 镜像，无法核实具体版本标签，暂用 latest；沙箱里用 moto 代替（见 docs/project-state.md）
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: retouch
+      MINIO_ROOT_PASSWORD: retouch-secret
+    ports:
+      - "127.0.0.1:7313:9000"
+      - "127.0.0.1:7314:9001"
+    volumes:
+      - minio-data:/data
+
+volumes:
+  postgres-data:
+  minio-data:

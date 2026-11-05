@@ -2,12 +2,14 @@
 
 状态用语只用：设计 / 已实现 / 已验证 / 待验收 / 失败。
 
-## 当前阶段：A（上游基线核查）
+## 当前阶段：B（设计并实现 Java 主路径）
 
-- 更新时间：2026-11-05（UTC）
+A 阶段已完成（提交 `85c0c36`、`0ad7240`），下面的 A 阶段条目保留作记录。
+
+- 更新时间：2026-11-05 07:20（UTC）
 - 上游固定版本：`yuyuanweb/ai-picture-editor@49f6ad8c96740a68b7e6228a47e8e2be6876eb34`
 - 本仓库：`zzzzain777/spring-ai-retouch-agent`（公开）。A 阶段只提交文档与本人编写的评测材料，没有 Java 实现代码。
-- Java 实现与 Java 测试：**均不存在**。评测结果只有原版的确定性部分。
+- Java 实现：B 阶段进行中，见下方 B 阶段表。评测结果只有原版的确定性部分。
 
 | 项 | 状态 | 证据 / 说明 |
 | --- | --- | --- |
@@ -25,8 +27,21 @@
 | DeepSeek 规划转发器 | 已实现 | `eval/tools/planner_proxy.py`，只用本地假服务验证了转发、换密钥、记轨迹和无密钥拒绝；尚未连过真实 DeepSeek |
 | 原版真实模型基线 | 待验收 | 规划模型改用 DeepSeek。云端网络策略拒绝 `api.deepseek.com`（代理 403），环境未配置 `DEEPSEEK_API_KEY`；27 例记为跳过 |
 | Java 工程骨架与模型配置入口 | 已实现 | `server/`：Spring Boot 4.1.2 + Spring AI 2.0.2（OpenAI 兼容接口，默认 DeepSeek，可切 DashScope 兼容模式）；`application.yml` 只有 `${DEEPSEEK_API_KEY:}`、`${DASHSCOPE_API_KEY:}` 入口，真实密钥放被忽略的 `application-local.yml`。云端已验证：`mvn test` 通过；无密钥可启动；本地 yml 中的 key 被读取；请求路径为 `{base-url}/chat/completions` 且不带工具（本地假服务只验证线路）。真实模型调用尚未验证 |
-| 真实 DeepSeek 连通性检查 | 待验收 | 云端网络拒绝 `api.deepseek.com`；改在用户 Mac 上用本地 `application-local.yml` 运行 `--retouch.model-check.enabled=true` |
+| 真实 DeepSeek 连通性检查 | 已验证 | 2026-11-05 在用户 Mac（Corretto 21.0.12）上用被忽略的 `application-local.yml` 运行 `--retouch.model-check.enabled=true`：退出码 0，reply=OK；请求 `deepseek-chat`，响应返回模型名 `deepseek-flash`（服务端映射，评测记录以返回名为准），promptTokens=18、completionTokens=1、1517 ms。密钥从未进入提交历史 |
 | 新 GitHub 仓库与首个提交 | 已验证 | `zzzzain777/spring-ai-retouch-agent@85c0c365477f35b3f59d72e9e40d217f662c08fa`（tree `8fc8e76`），经用户 Mac 本机 git（gh 登录 zzzzain777）推送；云端重新克隆核对 tree 一致 |
+
+## B 阶段进度
+
+规划模型与评测基线：用户 2026-11-05 选定 DeepSeek（`deepseek-chat`）；DashScope 只用于图像模型。
+数据存储：用户 2026-11-05 选定业务库用阿里云 RDS PostgreSQL（免费试用实例），Redis 用本机。自动化测试仍用 Testcontainers 临时库，不连 RDS。
+
+| 项 | 状态 | 证据 / 说明 |
+| --- | --- | --- |
+| B1 架构文档 | 设计 | `docs/architecture.md`：组件职责、数据权威、统一工具规格、Agent 主路径、状态机、跨服务任务 ID、图像传输、幂等/超时/重启、主要时序。描述的是待实现结构 |
+| B2 构建与基础集成测试 | 已验证 | Spring Boot 4.1.2、Spring AI 2.0.2、Hibernate 7.4.13、Flyway 12.4.0、Testcontainers 2.0.5、AWS SDK 2.56.0。`mvn test`：3 个集成测试通过（真实 PostgreSQL 17、Redis 7、moto S3；Flyway 建 7 张表；`/api/health` 返回 api/database/storage/redis 全 ok）。云端沙箱用 `hub.image.name.prefix=mirror.gcr.io/` 拉镜像（只在沙箱配置，不进仓库） |
+| B3 登录与素材 | 已验证 | 注册/登录/登出/当前用户（JWT 放 httpOnly Cookie `session`，SameSite=Lax，与上游契约一致）；未登录与伪造会话返回 401 `{"detail":"未登录或会话已过期"}`；上传 JPEG/PNG/WEBP，校验格式、≤20 MB（413）、最短边 ≥32、≤5000 万像素（422）；素材按所有者过滤，他人素材返回 404；读取时签发短时 URL。`mvn test`：`AuthAndAssetTests` 5 个用例（含签名 URL 下载字节一致）全部通过。限制：会话是无状态 JWT，登出只清 Cookie，令牌在过期前被重放仍有效（与上游相同）；素材库分组接口放到 B4 |
+| 阿里云 RDS PostgreSQL 接入 | 设计 | 配置入口已备好（`application-local.yml.example` 的 `spring.datasource` 段、`server/README.md` 步骤），等用户开通实例后在 Mac 上启动验证 Flyway 建表与健康检查 |
+| 模型连通性检查独立化 | 已验证 | `server/scripts/model-check.sh` 改为独立小程序，排除数据库、迁移、JPA、Redis 自动配置；本地假服务验证：数据库与 Redis 地址不可达时仍能完成调用 |
 
 ## 环境记录
 
