@@ -184,6 +184,17 @@ def test_mask_box_reports_the_bounding_box_and_digest(s3, fake):
     assert stale.status_code == 409
 
 
+def test_render_flattens_the_canvas_without_a_model(s3, fake):
+    _put("users/u1/p.png", _product())
+    client = TestClient(main.app)
+    body = {"output_prefix": PREFIX, "canvas": _canvas("users/u1/p.png")}
+    data = client.post("/v1/ops/render", json=body, headers=_headers()).json()
+    (output,) = data["outputs"]
+    assert output["name"] == "canvas" and (output["width"], output["height"]) == (40, 40)
+    assert _get(output["key"]).getpixel((20, 20))[:3] == (0, 0, 255)
+    assert fake.requests == []
+
+
 def test_delivery_letterboxes_each_size_without_a_model(s3, fake):
     _put("users/u1/p.png", _product())
     client = TestClient(main.app)

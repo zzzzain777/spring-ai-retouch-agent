@@ -2,11 +2,13 @@
 
 状态用语只用：设计 / 已实现 / 已验证 / 待验收 / 失败。
 
-## 当前阶段：B（设计并实现 Java 主路径）
+## 当前阶段：C（配对评测与改进）
+
+B 阶段已完成（提交至 `8232ede`）。
 
 A 阶段已完成（提交 `85c0c36`、`0ad7240`），下面的 A 阶段条目保留作记录。
 
-- 更新时间：2026-11-05 12:00（UTC）
+- 更新时间：2026-11-05 14:30（UTC）
 - 上游固定版本：`yuyuanweb/ai-picture-editor@49f6ad8c96740a68b7e6228a47e8e2be6876eb34`
 - 本仓库：`zzzzain777/spring-ai-retouch-agent`（公开）。A 阶段只提交文档与本人编写的评测材料，没有 Java 实现代码。
 - Java 实现：B 阶段进行中，见下方 B 阶段表。评测结果只有原版的确定性部分。
@@ -48,10 +50,25 @@ A 阶段已完成（提交 `85c0c36`、`0ad7240`），下面的 A 阶段条目�
 | B8 选区与遮罩 | 已验证 | Python `POST /v1/ops/mask`（本项目自写：笔刷 3 点以上填多边形、2 点画线、1 点画圆，笔刷宽度按短边比例；点选暂以圆形区域代替，不是分割模型；可与已有遮罩合并；空选区 422「选区为空」），Python 测试 14 个通过。Java：`SelectionStore` 用 Redis `selection:{sessionId}`（TTL 24 小时，值为修订号、遮罩素材 id、标点），修订号不一致或 Redis 异常都视为无选区；`POST/GET/DELETE /api/sessions/{id}/selection` 与 `POST …/selection/prepare`（204，占位）按上游语义：笔刷与已有遮罩合并、点选 `append` 追加标点、修订号过期 409「画布已更新，请重新选择」、空输入 422「请点选或涂抹选区」、无选区时 GET 返回 `null`；遮罩登记为 `mask` 类素材，素材库不展示。规划：画布摘要写明选区状态；计划校验后，`usesMask` 的步骤若没有 `mask_asset_id` 就钉入当前选区。`SelectionTests` 4 个（需要 uv，真实 Python 进程）通过；云端 Java 全量 71 个、Python 14 个通过。用户 Mac 装 uv 后在 `0741ae4` 上补跑 `SelectionTests` 4 个通过。限制：点选不是分割（SAM 在 B9 再评估）；目前登记的工具都不用遮罩，钉入逻辑要等 B9 的区域工具才在真实流程里生效 |
 | B9 其余 12 个图像工具 + 文生图、批量接口 | 已实现（图像模型只用本地假服务验证） | 上游 22 个工具全部登记在 `ToolRegistry`（顺序与上游一致，启动时检查齐全）。分工见 `architecture.md` §3.1：作用哪层、用不用选区、提示词、结果进画布还是只进图片墙、修订号加不加都由 Java 决定；Python 新增 9 个接口（抠图、整图编辑、区域编辑、拆层、提升图层、遮罩外接框、投放尺寸、文生图、转格式），图像模型由 Python 调 DashScope、结果下载进自有对象存储。不需要图像模型、本地即可用：`remove_background`（默认四角取色抠底；装可选依赖 rembg 后用 rembg）、`prepare_delivery_sizes`、`adjust_image`，以及 `batch_process` 里的这三种操作。需要图像模型的 9 个：`replace_background`、`expand_canvas`、`upscale_image`、`erase_region`、`replace_region`、`generate_marketing`、`split_layers`、`promote_object_to_layer`、`generate_image`。新增接口 `POST /api/generations`、`POST/GET /api/batches`、`GET /api/batches/{id}`、`GET /api/batches/{id}/export`（zip）。测试：Python 38 个（`fake_dashscope.py` 用 httpx MockTransport 代替 DashScope）；Java `ModelToolTests` 6 个（真实 Python 进程 + moto S3 + 本地假 DashScope `FakeDashScopeServer`：本地工具不发模型请求、投放尺寸修订号不变；换背景请求带转交的密钥与本项目提示词、多张候选只上墙；扩图尺寸与采纳；放大；营销图；区域工具用当前选区并在成功后清空、修订号过期不调模型；拆层两层且不重复、`include_text` 明确报不支持、提升图层改名；Agent 计划钉入选区后执行；文生图候选；批量 2 张 × 2 步 × 2 种格式、详情、zip 4 个文件、素材不存在 404、操作参数非法 422）、`ModelKeyMissingTests` 1 个（不配密钥时模型工具失败并说明原因、画布不变）。云端 Java 全量 78 个、Python 38 个全部通过。**未接真实图像模型**：用户 2026-11-05 要求省钱，不开通 DashScope；假服务返回纯色图，只证明请求格式、密钥转交、结果入库与文档更新这条链路，不能当作模型效果或模型验证。限制：`split_layers` 不支持拆文字层（未接 OCR，`include_text=true` 直接报错）；点选仍是圆形区域，不是分割模型；批量任务按图串行执行；会话导出接口 `POST /api/sessions/{id}/exports` 未做 |
 | 工具说明改写 | 已实现 | 发现 `2c5d2af` 里 9 个文档工具的说明与图层参数说明直接沿用了上游原文。本次全部改成自己的措辞（`DocumentTools`、`ImageTools`、`ModelTools`、`LayerTools`、`BatchTool`），给模型的提示词也都是自己写的。保留与上游一致的只有接口契约：工具名、参数名、错误与提示文案（评测对比要用） |
-| B10 独立前端与页面走查 | 已实现（云端页面走查 15/15；真实 DeepSeek 走查待验收） | `web/`：React 18.3.1 + Vite 6.4.5 + TypeScript 5.9.3，本项目独立编写，未使用上游前端的代码或资源。页面：登录注册；修图（上传建会话、按画布文档渲染图层、笔刷与点选选区、撤销重做、对话与计划确认/取消/重试/规划详情、工具面板、图层显隐与顺序、图片墙、历史）；文生图；批量处理（zip 下载）。工具列表与参数表单由 `GET /api/tools` 生成：本次给该接口加了 `parameters`（与交给规划模型的 JSON Schema 同源，`ToolTests` 断言隐藏参数不出现、共 22 个工具），前端不另写参数规则。排队工具用 SSE 显示进度。`npm run build`（tsc 严格模式 + vite build）通过。页面走查 `web/e2e/walkthrough.mjs`：15 步，覆盖文档工具、排队工具与 SSE、撤销重做、选区、去背景与图层、投放尺寸进图片墙、对话多步等待确认→确认执行、取消、无关请求、批量与 zip、未配置图像模型时的失败提示，并检查控制台与 HTTP 错误。云端结果 15/15（`docs/evidence/ui-walkthrough/cloud-fake-planner/`）：Java、Python、PostgreSQL、Redis 是真实运行的，对象存储用 moto；**对话部分的规划模型是本地联调替身（云端连不上 DeepSeek，替身没有提交），只证明前端与 Java 的计划交互，不代表规划能力**；用真实 DeepSeek 的走查在用户 Mac 上进行。限制：没有画布上直接拖动/缩放图层的手势（移动、缩放、旋转走工具面板）；没有会话导出按钮（导出接口未做）；只在 Chromium 内核验证过 |
+| B10 独立前端与页面走查 | 已验证（云端与用户 Mac 各 15/15） | `web/`：React 18.3.1 + Vite 6.4.5 + TypeScript 5.9.3，本项目独立编写，未使用上游前端的代码或资源。页面：登录注册；修图（上传建会话、按画布文档渲染图层、笔刷与点选选区、撤销重做、对话与计划确认/取消/重试/规划详情、工具面板、图层显隐与顺序、图片墙、历史）；文生图；批量处理（zip 下载）。工具列表与参数表单由 `GET /api/tools` 生成：本次给该接口加了 `parameters`（与交给规划模型的 JSON Schema 同源，`ToolTests` 断言隐藏参数不出现、共 22 个工具），前端不另写参数规则。排队工具用 SSE 显示进度。`npm run build`（tsc 严格模式 + vite build）通过。页面走查 `web/e2e/walkthrough.mjs`：15 步，覆盖文档工具、排队工具与 SSE、撤销重做、选区、去背景与图层、投放尺寸进图片墙、对话多步等待确认→确认执行、取消、无关请求、批量与 zip、未配置图像模型时的失败提示，并检查控制台与 HTTP 错误。云端结果 15/15（`docs/evidence/ui-walkthrough/cloud-fake-planner/`）：Java、Python、PostgreSQL、Redis 是真实运行的，对象存储用 moto；**对话部分的规划模型是本地联调替身（云端连不上 DeepSeek，替身没有提交），只证明前端与 Java 的计划交互，不代表规划能力**；用户 Mac（`34aa219`，Node 22.23.4，本机 Chrome）用真实 DeepSeek 再跑一次：15/15、23.1 秒，4 次规划请求都按预期（两条多步指令停在等待确认、确认后执行、取消后画布不变、无关请求无计划），记录 `docs/evidence/ui-walkthrough/mac-deepseek/`（提交 `8232ede`）。观察：无关请求的 prompt token 为 4532，B8 时同样请求是 2244，原因是登记工具从 10 个增至 22 个、每次请求都带全部工具 Schema；按 DeepSeek 定价每次规划仍不到一分钱，但评测时要记进成本。限制：没有画布上直接拖动/缩放图层的手势（移动、缩放、旋转走工具面板）；没有会话导出按钮（导出接口未做）；只在 Chromium 内核验证过 |
 | 推送 B1–B9 | 已验证 | `2117514`（B1–B3，Mac 上 8 个测试通过）、`2c5d2af`（B4–B6，Mac 上 26 个通过、2 个因本机没有 `uv` 跳过；云端 28 个与 Python 8 个全部通过）、`134105d`（B7，Mac 上 61 通过、4 跳过；云端 65 个全部通过）、`0741ae4`（B7 修正 + B8，Mac 上 63 通过、8 跳过；云端 Java 71 个、Python 14 个全部通过）、`51a9086`（B9，用户 Mac 装好 uv 后：Java 78 个全部通过、0 跳过，Python 38 个通过；只调本地假 DashScope，未调真实模型）。前几次跳过的都是需要 Python 图像服务（`uv`）的测试 |
 | 阿里云 RDS PostgreSQL 接入 | 不做 | 用户 2026-11-05 08:41 决定：要付费，不用。业务库用本机 PostgreSQL；`application-local.yml.example` 的 `spring.datasource` 段仍可指向任意 PostgreSQL |
 | 模型连通性检查独立化 | 已验证 | `server/scripts/model-check.sh` 改为独立小程序，排除数据库、迁移、JPA、Redis 自动配置；本地假服务验证：数据库与 Redis 地址不可达时仍能完成调用 |
+
+## C 阶段进度
+
+口径：同一冻结数据集 `agent-behavior-v1`（MANIFEST 校验），原版与 Java 版同模型（`deepseek-chat`，temperature 0）、同参数配对；含 `llm` 的样例每版至少 3 轮；Mock/占位只用于 `image_exec` 流程判定，不作模型结论。
+
+| 项 | 状态 | 证据 / 说明 |
+| --- | --- | --- |
+| 真实失败捕获 | 已验证 | 云端对 `51a9086` 跑确定性子集（`image_exec,planner_unavailable`）：17 例中 R06「导出会话素材压缩包」失败（404，接口未实现），报告 `eval/reports/java-51a9086-noplanner-20261105T135400Z/` |
+| 修复：会话导出 | 已验证 | Python `POST /v1/ops/render`（拼平画布，不调模型，测试 39 个通过）；Java `POST /api/sessions/{id}/exports` 按上游语义（指定素材必须在图片墙否则 422「素材不在该会话中」、默认导营销/投放图、无则导当前画布拼平图、`manifest.json`、`filename*=UTF-8''`），画布入参构造与 Worker 共用 `Canvases`。新增 `SessionExportTests` 4 个（真实 Python 渲染、zip 内容、422、他人素材 422）；云端 Java 全量 82 个通过 |
+| 同集复测 | 已验证 | 修复后同命令同数据集重跑：17/17，报告 `eval/reports/java-exportfix-noplanner-20261105T140823Z/`。修复前后两份报告都保留 |
+| 运行器增强：规划轨迹 | 已实现 | `run_agent_eval.py` 在每次 send 落定后取 `…/{turnId}/trace`（只有 Java 版有，原版 404 时静默跳过），token/耗时记进 `results.json` 与报告；只加观测，断言与判定不变，数据集未动（MANIFEST 不含运行器） |
+| 配对汇总脚本 | 已实现 | `eval/tools/aggregate.py`：多轮 results.json 合并为两版对照（各轮通过率、按指标合计、两版结论不同的样例、多轮不稳定样例、token 与可选成本折算）；校验各轮 MANIFEST 一致 |
+| Mac 配对评测（真实 DeepSeek，各 3 轮） | 待验收 | 原版经 `planner_proxy.py` 用 DeepSeek（`IMAGE_PROVIDER=mock`→`image_exec`），Java 版用 DeepSeek + 本地占位图像接口 `eval/tools/fake_image_model.py`；另各跑一轮 `planner_unavailable` 验 F06。云端网络拒绝 `api.deepseek.com`，只能在用户 Mac 跑 |
+| 出图质量 | 待验收 | 未接真实图像模型（省钱决定），RUBRIC §4 人工图像量表本轮无法打分；报告如实标注「未测」 |
+| pgVector | 不做 | 本阶段未引入向量检索，无真实数据库扩展与 Embedding 验证，不写入简历与技术栈 |
 
 ## 环境记录
 
@@ -71,5 +88,5 @@ A 阶段已完成（提交 `85c0c36`、`0ad7240`），下面的 A 阶段条目�
 
 1. B9 已推送 `51a9086`。
 2. 用户 Mac 已装 uv 0.13.7（用户同意，免费，装在用户目录）。`0741ae4` 补跑：Java 71 个全部通过、0 跳过（含 `SelectionTests` 4、`ImageToolTests` 2、`AgentImageTests` 2），Python 14 个通过。
-3. B10：用户 Mac 装 Node（免费，装在用户目录），用真实 DeepSeek 跑一次页面走查。之后用冻结评测集 agent-behavior-v1 对比原版基线（规划用真实 DeepSeek，按需跑一次）。
-4. 可选：会话导出接口；规划提示词与画布摘要按 22 个工具复查。
+3. B 阶段各项已完成并推送（`34aa219`、`8232ede`）。下一阶段（评测对比：用冻结评测集 agent-behavior-v1 以真实 DeepSeek 对比原版基线）等用户指令。
+4. 可选：会话导出接口；规划提示词与画布摘要按 22 个工具复查；工具 Schema 瘦身以降低每次规划的 prompt token。

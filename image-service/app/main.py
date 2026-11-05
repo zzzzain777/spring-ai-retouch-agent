@@ -219,6 +219,14 @@ class GenerateIn(BaseModel):
     model: ModelIn
 
 
+class RenderIn(BaseModel):
+    """把画布文档拼平成一张图（会话导出用），不调模型。"""
+
+    output_prefix: str
+    canvas: CanvasIn
+    name: str = Field(default="canvas", pattern=r"^[a-z0-9\-]{1,40}$")
+
+
 class EncodeIn(BaseModel):
     output_prefix: str
     input_key: str
@@ -566,6 +574,16 @@ def generate_op(
     outputs = [_save(body.output_prefix, f"generated-{i}", image) for i, image in enumerate(images[: body.count], start=1)]
     _done("generate", run_id, attempt, started)
     return {"outputs": outputs}
+
+
+@app.post("/v1/ops/render")
+def render_op(body: RenderIn, token: Token = None, run_id: RunId = None, attempt: Attempt = None) -> dict:
+    """渲染画布：按图层列表拼平输出 PNG。"""
+    started = _guard(token, run_id, attempt, body.output_prefix)
+    image = _flatten(body.canvas)
+    output = _save(body.output_prefix, body.name, image)
+    _done("render", run_id, attempt, started)
+    return {"outputs": [output]}
 
 
 @app.post("/v1/ops/encode")

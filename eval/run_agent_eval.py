@@ -240,6 +240,7 @@ class Runner:
                 result.metrics["send_latency_s"] = round(time.perf_counter() - started, 3)
                 self._settle(client, ctx)
                 result.metrics["turn_settle_s"] = round(time.perf_counter() - started, 3)
+                self._planner_trace(client, ctx, result)
         elif kind in {"confirm", "cancel", "retry"}:
             tid = ctx["ids"].get("turn_id")
             response = client.http.post(f"/api/sessions/{sid}/messages/{tid}/{kind}")
@@ -306,6 +307,32 @@ class Runner:
                 return
             time.sleep(POLL_INTERVAL)
 
+    def _planner_trace(self, client: Client, ctx: dict, result: CaseRun) -> None:
+        """取这一轮的规划轨迹（模型名、token 用量）记进本例指标。只有 Java 版有该接口；
+        原版返回 404 时静默跳过，不影响断言——这是观测数据，不是判定依据。"""
+        sid, tid = ctx["ids"].get("session_id"), ctx["ids"].get("turn_id")
+        if not sid or not tid:
+            return
+        try:
+            response = client.http.get(f"/api/sessions/{sid}/messages/{tid}/trace")
+        except httpx.HTTPError:
+            return
+        if response.status_code != 200:
+            return
+        data = _json_or_none(response) or {}
+        if not isinstance(data, dict) or not data:
+            return
+        result.trace.append({"event": "planner_trace", "trace": {
+            key: data.get(key)
+            for key in ("model", "elapsed_ms", "prompt_tokens", "completion_tokens", "finish_reason",
+                        "tools_offered", "rounds", "rejected", "failure")
+        }})
+        for key in ("prompt_tokens", "completion_tokens", "elapsed_ms"):
+            value = data.get(key)
+            if isinstance(value, (int, float)):
+                result.metrics[f"planner_{key}"] = result.metrics.get(f"planner_{key}", 0) + value
+        result.metrics["planner_calls"] = result.metrics.get("planner_calls", 0) + 1
+
     def _sse(self, client: Client, path: str) -> list[dict]:
         frames: list[dict] = []
         with client.http.stream("GET", path, timeout=RUN_TIMEOUT) as response:
@@ -362,6 +389,12 @@ def summarize(runs: list[CaseRun]) -> dict:
                 "p95": values[min(len(values) - 1, int(len(values) * 0.95))],
                 "max": values[-1],
             }
+    planner = {"calls": 0, "prompt_tokens": 0, "completion_tokens": 0, "elapsed_ms": 0}
+    for run in runs:
+        for key in planner:
+            value = run.metrics.get(f"planner_{key}" if key != "calls" else "planner_calls")
+            if isinstance(value, (int, float)):
+                planner[key] += value
     return {
         "total": len(runs),
         "executed": len(executed),
@@ -372,6 +405,7 @@ def summarize(runs: list[CaseRun]) -> dict:
         "by_category": by_category,
         "by_metric": by_metric,
         "latency": latency,
+        "planner": planner,
     }
 
 
@@ -398,6 +432,10 @@ def render(meta: dict, summary: dict, runs: list[CaseRun]) -> str:
         executed = bucket["pass"] + bucket["fail"]
         rate = f"{bucket['pass']}/{executed}" if executed else "—"
         lines.append(f"| {metric} | {bucket['pass']} | {bucket['fail']} | {bucket['skipped']} | {rate} |")
+    if summary.get("planner", {}).get("calls"):
+        planner = summary["planner"]
+        lines += ["", f"规划调用（被测系统上报的轨迹）：{planner['calls']} 次，prompt tokens {planner['prompt_tokens']}，"
+                  f"completion tokens {planner['completion_tokens']}，模型耗时合计 {planner['elapsed_ms']} ms。"]
     if summary["latency"]:
         lines += ["", "| 耗时 | 样本数 | p50 秒 | p95 秒 | 最大 秒 |", "| --- | --- | --- | --- | --- |"]
         for key, stats in summary["latency"].items():

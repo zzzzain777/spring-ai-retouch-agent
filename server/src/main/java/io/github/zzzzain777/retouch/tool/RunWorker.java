@@ -500,36 +500,9 @@ public class RunWorker implements SmartLifecycle {
 
         @Override
         public Map<String, Object> canvas(boolean includeText) {
-            LayerDocument doc = document();
-            var layers = new ArrayList<Map<String, Object>>();
-            for (Layer layer : doc.layers()) {
-                var entry = new LinkedHashMap<String, Object>();
-                entry.put("kind", layer.kind().value());
-                if (layer.kind() == LayerKind.IMAGE && layer.assetId() != null) {
-                    // 素材不属于该用户或已不存在时不画这一层（与上游一致），不把别人的对象键交给图像服务
-                    assets.find(run.getUserId(), layer.assetId())
-                            .ifPresent(asset -> entry.put("key", asset.getStorageKey()));
-                }
-                entry.put("width", Math.max(1, layer.width()));
-                entry.put("height", Math.max(1, layer.height()));
-                entry.put("x", layer.transform().x());
-                entry.put("y", layer.transform().y());
-                entry.put("scale_x", layer.transform().scaleX());
-                entry.put("scale_y", layer.transform().scaleY());
-                entry.put("rotation", layer.transform().rotation());
-                entry.put("opacity", layer.opacity());
-                entry.put("visible", layer.visible());
-                entry.put("text", layer.text());
-                entry.put("font_size", layer.fontSize());
-                entry.put("fill", layer.fill());
-                layers.add(entry);
-            }
-            var canvas = new LinkedHashMap<String, Object>();
-            canvas.put("width", doc.width());
-            canvas.put("height", doc.height());
-            canvas.put("layers", layers);
-            canvas.put("include_text", includeText);
-            return canvas;
+            // 素材不属于该用户或已不存在时不画这一层（与上游一致），不把别人的对象键交给图像服务
+            return Canvases.payload(document(),
+                    id -> assets.find(run.getUserId(), id).map(Asset::getStorageKey), includeText);
         }
 
         @Override

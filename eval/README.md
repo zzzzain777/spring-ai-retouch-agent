@@ -18,6 +18,8 @@
 - `datasets/agent-behavior-v1/RUBRIC.md`：评分口径与图像人工量表。
 - `tools/make_images.py`：生成两张合成测试图（不含第三方素材）。
 - `tools/planner_proxy.py`：评测用规划模型转发器，见下文。
+- `tools/fake_image_model.py`：占位图像接口（DashScope 兼容），等价于上游 `IMAGE_PROVIDER=mock`，只用于 `image_exec` 流程判定，不是图像模型。
+- `tools/aggregate.py`：把两版多轮 results.json 汇总成配对对比报告（含 token 与可选成本折算）。
 - `reports/`：每次运行的 `results.json`、`traces.jsonl`、`report.md`。
 
 ## 运行
@@ -52,6 +54,48 @@ DASHSCOPE_BASE_URL=http://127.0.0.1:7320 DASHSCOPE_API_KEY=placeholder PLANNER_M
 - `IMAGE_PROVIDER=mock` 时图像工具用上游自带的占位实现跑完，此时只能声明 `image_exec`，结论只覆盖规划与流程，不覆盖出图质量。
 
 Java 版在 `application.yml` 里用 `${DEEPSEEK_API_KEY}` 读取密钥，本地用未跟踪的 `application-local.yml`（B 阶段提供示例文件）。
+
+
+## 配对评测（C 阶段）步骤
+
+两版都在同一台机器、同一数据集、同一模型与参数（`deepseek-chat`，temperature 0）下跑；含 `llm` 的样例每版 3 轮。密钥只放环境变量或未跟踪文件（如 `application-local.yml`），运行时自行注入，**不要把密钥写进命令行参数、日志或任何输出**。
+
+原版（上游 `49f6ad8`，临时克隆，不进本仓库）：
+
+```bash
+# 中间件、迁移、API、Worker 的启动见 docs/upstream-baseline.md §11
+DEEPSEEK_API_KEY=*** uv run eval/tools/planner_proxy.py --port 7320 --trace eval/reports/planner-trace-upstream-r1.jsonl
+# 上游环境：DASHSCOPE_BASE_URL=http://127.0.0.1:7320 DASHSCOPE_API_KEY=placeholder PLANNER_MODEL=deepseek-chat IMAGE_PROVIDER=mock
+uv run eval/run_agent_eval.py --base-url http://127.0.0.1:8000 --dataset eval/datasets/agent-behavior-v1 \
+  --label upstream-deepseek-r1 --capabilities llm,image_exec --note "deepseek-chat，经 planner_proxy；IMAGE_PROVIDER=mock"
+```
+
+Java 版（本仓库）：
+
+```bash
+uv run eval/tools/fake_image_model.py --port 7340   # 占位图像接口，对应能力 image_exec
+# 启动 server：DEEPSEEK_API_KEY 来自环境或 application-local.yml；--retouch.image.dashscope.base-url=http://127.0.0.1:7340
+uv run eval/run_agent_eval.py --base-url http://127.0.0.1:7302 --dataset eval/datasets/agent-behavior-v1 \
+  --label java-deepseek-r1 --capabilities llm,image_exec --note "deepseek-chat；图像为本地占位接口"
+```
+
+F06 需要 `planner_unavailable`：两版各再跑一轮不配规划密钥的运行（Java 版即云端用的 `--capabilities image_exec,planner_unavailable`；原版给 proxy 不配 DEEPSEEK_API_KEY 即可拒绝）。
+
+汇总（token 单价传当天 DeepSeek 牌价，并在 --note 注明来源与日期；不传就只报 token 数）：
+
+```bash
+uv run eval/tools/aggregate.py \
+  --run upstream=eval/reports/upstream-deepseek-r1-*/results.json \
+  --run upstream=eval/reports/upstream-deepseek-r2-*/results.json \
+  --run upstream=eval/reports/upstream-deepseek-r3-*/results.json \
+  --run java=eval/reports/java-deepseek-r1-*/results.json \
+  --run java=eval/reports/java-deepseek-r2-*/results.json \
+  --run java=eval/reports/java-deepseek-r3-*/results.json \
+  --proxy-trace upstream=eval/reports/planner-trace-upstream-all.jsonl \
+  --out eval/reports/paired-c1
+```
+
+出图质量：本项目未接真实图像模型（省钱决定），RUBRIC §4 的人工图像量表本轮**无法打分**，报告必须写「未测」，不得以占位图结果冒充。
 
 ## 冻结规则
 
