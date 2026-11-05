@@ -15,6 +15,8 @@ import io.github.zzzzain777.retouch.asset.Asset;
 public record LayerDocument(int width, int height, List<Layer> layers) {
 
     public static final String BASE_LAYER_ID = "base";
+    public static final String BACKGROUND_LAYER_ID = "background";
+    public static final String SUBJECT_LAYER_ID = "subject";
 
     public LayerDocument {
         layers = layers == null ? List.of() : List.copyOf(layers);
@@ -109,6 +111,11 @@ public record LayerDocument(int width, int height, List<Layer> layers) {
         public Layer withOpacity(double o) {
             return new Layer(id, kind, name, width, height, assetId, transform, o, visible, locked, sourceHash, text,
                     fontSize, fill);
+        }
+
+        public Layer withName(String newName) {
+            return new Layer(id, kind, newName, width, height, assetId, transform, opacity, visible, locked,
+                    sourceHash, text, fontSize, fill);
         }
 
         public Layer withVisible(boolean v) {

@@ -58,6 +58,10 @@ public final class ImageServiceProcess implements AutoCloseable {
         env.put("S3_BUCKET", "retouch");
         env.put("S3_ACCESS_KEY", "retouch");
         env.put("S3_SECRET_KEY", "retouch-secret");
+        // 测试里去背景用四角取色，不下载抠图模型；本机地址（假的模型服务）不走代理
+        env.put("MATTING_PROVIDER", "corner");
+        env.merge("NO_PROXY", "127.0.0.1,localhost", (old, add) -> old + "," + add);
+        env.merge("no_proxy", "127.0.0.1,localhost", (old, add) -> old + "," + add);
         Process process = builder.start();
         String url = "http://127.0.0.1:" + port;
         var client = HttpClient.newBuilder().proxy(HttpClient.Builder.NO_PROXY).build();

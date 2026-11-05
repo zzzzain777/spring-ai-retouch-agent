@@ -10,7 +10,7 @@
 | --- | --- | --- | --- |
 | 前端（React + Vite，独立实现） | 7301 | 画布展示、手动工具面板、对话与计划确认、选区笔刷与点选、SSE 进度展示 | 不做业务校验，不直连 Python 或存储写入 |
 | Java 服务 `server/`（Spring Boot 4.1.2 + Spring AI 2.0.2） | 7302 | **唯一对外 API**；登录与权限；素材、会话、画布文档、历史；统一工具规格与参数校验；Agent 规划、计划校验、确认、调度、取消、重试；任务队列与 SSE；所有状态持久化 | 不做像素计算，不直接调图像模型 |
-| Python 图像服务 `image-service/`（独立实现） | 7303，仅内网 | 无状态的图像计算：渲染合成、调色、抠图、遮罩栅格化与点选分割、投放尺寸、拆层；调用 DashScope 图像接口 | 不持有业务状态，不做用户鉴权，不决定执行顺序 |
+| Python 图像服务 `image-service/`（独立实现） | 7303，仅内网 | 无状态的图像计算：渲染合成、调色、抠图、遮罩栅格化（点选暂以圆形区域代替，未接分割模型）、投放尺寸、拆层；调用 DashScope 图像接口 | 不持有业务状态，不做用户鉴权，不决定执行顺序 |
 | PostgreSQL 17 | 7311 | 业务数据与任务队列的权威存储 | — |
 | Redis 7 | 7312 | 选区缓存（TTL 24 小时）、任务进度事件的发布订阅 | 不是任何业务数据的权威来源 |
 | S3 兼容对象存储（MinIO；云端沙箱用 moto） | 7313 | 图片字节 | 不存业务元数据 |
@@ -46,6 +46,27 @@ Java 里有且只有一份工具注册表 `ToolRegistry`，每个工具一个 `T
 
 手动接口 `POST /api/sessions/{id}/tools` 与 Agent 计划执行都走 `ToolService.submit(user, tool, params, sessionId)`：同一套参数校验、同一套资源授权（会话、图层、素材都按当前用户校验）、同一套执行器。前端可读 `GET /api/tools`（新增）拿到规格生成表单。
 
+### 3.1 22 个工具落在哪里（B9 后）
+
+分工原则：**决定做什么的都在 Java**（作用哪一层、用不用选区、给模型的提示词、结果进画布还是只进图片墙、修订号加不加）；Python 只按 Java 给的对象键渲染、合成、抠图、调 DashScope，并把输出写回本任务前缀。提示词与工具说明都是本项目自己写的。
+
+| 工具 | 执行方式 | 像素在哪算 | 图像模型 | 结果去向 |
+| --- | --- | --- | --- | --- |
+| 9 个文档工具（裁剪、翻转、透明度、显隐、改文字、图层顺序、缩放、旋转、移动） | DOCUMENT | 不算像素，只改文档 | — | 画布，修订号 +1 |
+| `adjust_image` | IMAGE | Python 调色 | — | 替换目标层 |
+| `remove_background` | IMAGE | Python 抠图：装了可选依赖 `rembg` 用它，否则用四角取色抠底（`MATTING_PROVIDER`） | — | 替换目标层（subject 类素材） |
+| `prepare_delivery_sizes` | IMAGE | Python 拼平画布、按 1:1/4:5/9:16 等留白缩放 | — | 只进图片墙（export），修订号不变 |
+| `replace_background` | IMAGE | Python 拼平背景层 | 编辑 | 1 张且未分层：替换背景层；多张或已分层：只进图片墙 |
+| `expand_canvas`、`upscale_image` | IMAGE | Python 拼平画布 | 编辑 | 未分层：结果成为当前图；已分层：只进图片墙 |
+| `erase_region`、`replace_region` | IMAGE，`usesMask` | Python 按“选区 ∩ 图层”裁遮罩，模型结果只贴回选区（羽化） | 编辑 | 替换该层，清空选区；画幅已变或修订号过期返回 409/失败，不调模型 |
+| `generate_marketing` | IMAGE | Python 拼平画布、按比例适配 | 编辑 | 只进图片墙（marketing） |
+| `split_layers` | IMAGE | Python 抠主体、补洞（OpenCV Telea） | 编辑（修背景） | 改成 background（锁定）+ subject 两层；已拆过不重复；`include_text=true` 明确报“暂不支持”（未接 OCR） |
+| `promote_object_to_layer` | IMAGE，`usesMask` | Python 按选区切物体、补原位置 | 编辑（修原位置） | 新增 `object-{摘要}` 图层；同一物体不重复提升 |
+| `generate_image` | IMAGE，不需会话 | — | 文生图（异步任务轮询） | 候选图（`GET /api/runs/{id}` 的 `candidates`） |
+| `batch_process` | COMPOSITE，不需会话 | 每一步一次 Python 调用，上一步输出键即下一步输入 | 视操作而定 | 每张图按格式（png/jpg）导出，`GET /api/batches/{id}/export` 打包 zip；单张失败只记在该项 |
+
+没有配置 `DASHSCOPE_API_KEY` 时（本项目当前状态，为省钱不接），需要图像模型的 9 个工具在 Java 侧直接失败「未配置 DASHSCOPE_API_KEY，图像模型不可用」，不发请求、画布不变；不需要模型的工具照常可用。
+
 ## 4. Agent 主路径
 
 ```text
@@ -61,7 +82,7 @@ POST /messages ─▶ 构造画布摘要 ─▶ Spring AI ChatClient（携带全
 - **规划阶段不执行工具**：Spring AI 2.0.2 的 `ToolCallingChatOptions` 已没有 `internalToolExecutionEnabled` 选项，工具执行改由 ChatClient 自动加入的 `ToolCallingAdvisor` 负责。规划调用显式关闭它的自动注册（`AdvisorParams.toolCallingAdvisorAutoRegister(false)`），模型返回的 tool_calls 原样交回 Java；注册给模型的工具只有定义没有实现，回调一旦被调用就抛异常。`PlannerNoExecutionTest` 守住这两点，并有对照用例证明不关掉时 Spring AI 确实会去执行。
 - **工具 Schema**：由 `ToolSpec` 的参数类型用 victools 生成（字段名下划线、必填与取值范围取 Bean Validation 注解、枚举取接口取值），与参数校验同源；隐藏参数不出现在 Schema 里，模型即使给了也会在校验前删掉。
 - **提示词**：本项目自写。通用规则固定；工具选择规则只收录所涉工具都已登记的条目，不引导模型调用尚未实现的工具。多步指令要求模型在一次回复里按顺序给出全部工具调用：B7 在 Mac 上用真实 DeepSeek 检查时，“先上下翻转，然后把透明度改成 60%”只返回了翻转一步，原规则“依次调用”被模型理解成等结果再给下一步。
-- **可选追问一轮**：`retouch.planner.follow-up-rounds`（默认 0）。大于 0 时，拿到工具调用后回给模型一条“已记录、尚未执行”的工具结果，请它补上剩余步骤或回复“好”；模型原样重复上一轮视为没有更多步骤；累计不超过 8 步，token 合计记进轨迹（`rounds` 字段）。工具始终没有被执行，追问只多一次模型请求。默认值以真实模型检查结果为准。
+- **可选追问一轮**：`retouch.planner.follow-up-rounds`（默认 0）。大于 0 时，拿到工具调用后回给模型一条“已记录、尚未执行”的工具结果，请它补上剩余步骤或回复“好”；模型原样重复上一轮视为没有更多步骤；累计不超过 8 步，token 合计记进轨迹（`rounds` 字段）。工具始终没有被执行，追问只多一次模型请求。真实 DeepSeek 检查里（`docs/evidence/real-planner-check/`），提示词修正后 0 轮已能一次给全多步，开 1 轮结果相同而 prompt token 约翻倍，所以默认 0。
 - **选区钉入**：规划时把 Redis 里当前修订号的选区写进画布摘要（“已有笔刷选区”“已有选区，n 个标点”或“当前没有选区”）；计划校验通过后，`usesMask` 的步骤若没有 `mask_asset_id`，填入该选区的遮罩素材 id。之后再改选区不影响已生成的计划；修订号不一致或 Redis 不可用视为没有选区，区域工具作用于整层。
 - **执行只由 Java 显式调度**：推进计划时先锁轮次行（`SELECT … FOR UPDATE`），按 `tool_runs` 对账步骤状态，再派发就绪步骤；文档工具同步完成后立即推进下一步，图像工具完成后由 Worker 回调推进。派发经 `ToolService.submit`，它总在独立事务里建任务与改文档（`REQUIRES_NEW`），工具失败不会把外层的计划更新标成只能回滚。
 - **确认、取消、重试**遵循上游语义：确认把等待中的步骤放行；取消把未开始的步骤标为 canceled、排队中的任务直接取消；重试把最后一个失败步骤重置为 pending 再推进，新建一条任务（`step_attempt` 递增）。终态轮次上的确认、取消、重试返回 409。
@@ -92,7 +113,8 @@ ToolRun：
 ## 6. 跨服务任务 ID 与图像传输
 
 - **任务 ID**：Java `tool_runs.id`（UUID）贯穿全链路：SSE 路径、Redis 频道、调用 Python 的请求头 `X-Run-Id` 与 `X-Attempt`、对象存储输出前缀 `runs/{runId}/{attempt}/`、日志 MDC。
-- **图像不走 HTTP 正文**：Java 只给 Python 传对象键与参数；Python 从对象存储读输入，把输出写到 `runs/{runId}/{attempt}/` 下，只回传元数据（键、宽高、格式、是否含透明、sha256）。Java 校验元数据后建 `assets` 行，再写文档与历史。
+- **图像不走 HTTP 正文**：Java 只给 Python 传对象键与参数；Python 从对象存储读输入，把输出写到 `runs/{runId}/{attempt}/` 下（批量等多步任务再加一层由 Java 指定、格式受限的子目录，如 `i1-o2-f1/`），只回传元数据（键、宽高、格式、是否含透明、sha256、输出名）。Java 校验元数据与前缀后建 `assets` 行，再写文档与历史。
+- **调 DashScope**：Python 把模型返回的图片下载后写进自有对象存储，Java 只登记自有存储里的对象，不保存模型服务的临时 URL。
 - **上传**：浏览器 → Java（multipart，校验 JPEG/PNG/WEBP、≤20 MB、≤5000 万像素）→ 对象存储。
 - **下载**：前端只拿 Java 签发的短时签名 URL。
 - **Java 调 Python**：内网 HTTP + 共享令牌头 `X-Internal-Token`；Python 不对公网开放。

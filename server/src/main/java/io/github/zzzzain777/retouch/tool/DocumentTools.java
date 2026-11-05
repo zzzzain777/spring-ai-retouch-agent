@@ -25,7 +25,7 @@ import io.github.zzzzain777.retouch.session.LayerDocument.LayerMissing;
  */
 public final class DocumentTools {
 
-    static final String LAYER_DESC = "要修改的图层 id 或名字，如 background、subject、物体2。不填则作用在选区下最上层可见图像。";
+    static final String LAYER_DESC = "要操作的图层，填图层 id 或图层名（例如 background、subject、物体2）；留空时作用于选区所在的最上层可见图像。";
     static final int MIN_CROP = 32;
 
     private DocumentTools() {
@@ -123,30 +123,30 @@ public final class DocumentTools {
     }
 
     public static final ToolSpec<CropIn> CROP_CANVAS = ToolSpec.document("crop_canvas", "裁剪",
-            "按比例或归一化矩形裁切画布。只改图层文档，不调用生成模型。", CropIn.class, Set.of(), null, DocumentTools::crop);
+            "把画布裁成指定比例，或裁到用 0 到 1 的相对坐标给出的矩形；只改图层文档，不生成新像素。", CropIn.class, Set.of(), null, DocumentTools::crop);
     public static final ToolSpec<FlipIn> FLIP_LAYER = ToolSpec.document("flip_layer", "翻转",
-            "水平或垂直翻转指定图层，默认最上层图像。", FlipIn.class, Set.of(),
+            "把一个图层左右或上下镜像；不指定图层时作用于最上层可见图像。", FlipIn.class, Set.of(),
             p -> p.direction() == null ? null : p.direction() == Direction.HORIZONTAL ? "水平翻转" : "垂直翻转",
             DocumentTools::flip);
     public static final ToolSpec<OpacityIn> SET_LAYER_OPACITY = ToolSpec.document("set_layer_opacity", "透明度",
-            "设置图层透明度，取值 0 到 1。", OpacityIn.class, Set.of(), null,
+            "修改图层的不透明度，0 为完全透明，1 为完全不透明。", OpacityIn.class, Set.of(), null,
             (doc, p) -> doc.replace(doc.resolve(p.layerId()).withOpacity(p.opacity())));
     public static final ToolSpec<VisibleIn> SET_LAYER_VISIBLE = ToolSpec.document("set_layer_visible", "显隐",
-            "显示或隐藏指定图层，不删除内容。", VisibleIn.class, Set.of(), null,
+            "隐藏或重新显示一个图层，图层内容会保留。", VisibleIn.class, Set.of(), null,
             (doc, p) -> doc.replace(doc.resolve(p.layerId()).withVisible(p.visible())));
     public static final ToolSpec<TextIn> SET_LAYER_TEXT = ToolSpec.document("set_layer_text", "改文字",
-            "修改文字图层的文案，可选字号与颜色。未指定图层时改最上层可见文字。", TextIn.class, Set.of(), null,
+            "改文字图层的内容，也可以同时改字号和颜色；不指定图层时改最上层可见的文字图层。", TextIn.class, Set.of(), null,
             DocumentTools::setText);
     public static final ToolSpec<ReorderIn> REORDER_LAYER = ToolSpec.document("reorder_layer", "图层顺序",
-            "调整图层前后顺序：top / bottom / up / down。", ReorderIn.class, Set.of(), null, DocumentTools::reorder);
+            "改变图层的上下层级：top 置顶，bottom 置底，up 上移一层，down 下移一层。", ReorderIn.class, Set.of(), null, DocumentTools::reorder);
     public static final ToolSpec<ScaleIn> SCALE_LAYER = ToolSpec.document("scale_layer", "缩放",
-            "缩放指定图层，默认最上层图像。factor 为相对倍率，scale_x / scale_y 为绝对值。", ScaleIn.class,
+            "缩放图层，不指定图层时作用于最上层可见图像；factor 在当前大小上乘以倍数，scale_x、scale_y 直接设定缩放值。", ScaleIn.class,
             Set.of("x", "y"), null, DocumentTools::scale);
     public static final ToolSpec<RotateIn> ROTATE_LAYER = ToolSpec.document("rotate_layer", "旋转",
-            "旋转图层。angle 为相对角度，rotation 为绝对角度，顺时针为正。", RotateIn.class, Set.of(), null,
+            "旋转图层，顺时针为正；angle 表示在当前角度上再转多少度，rotation 直接设定最终角度。", RotateIn.class, Set.of(), null,
             DocumentTools::rotate);
     public static final ToolSpec<MoveIn> MOVE_LAYER = ToolSpec.document("move_layer", "移动",
-            "移动指定图层。x/y 为绝对坐标，dx/dy 为相对像素位移。默认最上层图像。", MoveIn.class, Set.of(), null,
+            "移动图层，不指定图层时作用于最上层可见图像；x、y 是目标位置的像素坐标，dx、dy 是相对当前位置的偏移。", MoveIn.class, Set.of(), null,
             DocumentTools::move);
 
     public static List<ToolSpec<?>> all() {

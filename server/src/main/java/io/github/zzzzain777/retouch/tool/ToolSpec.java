@@ -59,6 +59,13 @@ public record ToolSpec<P>(String name, String label, String description, Class<P
                 idempotent ? 2 : 1, idempotent, false, null, null, handler);
     }
 
+    /** 不需要会话的工具（文生图、批量处理）：调远程模型，中断后不自动重排。 */
+    public static <P> ToolSpec<P> sessionless(String name, String label, String description, Class<P> type,
+            Execution execution, Set<String> hidden, Duration timeout, ImageHandler<P> handler) {
+        return new ToolSpec<>(name, label, description, type, execution, false, false, hidden, timeout, 1, false,
+                false, null, null, handler);
+    }
+
     /** 同一工具按参数细分说法（例如翻转分水平与垂直），没有细分时用 label。 */
     public String labelFor(P params) {
         String refined = detail == null || params == null ? null : detail.apply(params);

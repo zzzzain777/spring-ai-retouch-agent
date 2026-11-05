@@ -9,7 +9,13 @@ dependencies = [
     "pillow>=11.0",
     "numpy>=2.1",
     "boto3>=1.35",
+    "httpx>=0.27",
+    "opencv-python-headless>=4.10",
 ]
+
+[project.optional-dependencies]
+# 本地抠图模型（免费，首次使用时下载约 170 MB 的模型文件）；不装时去背景用四角取色兜底
+matting = ["rembg[cpu]>=2.0.60"]
 
 [dependency-groups]
 dev = [

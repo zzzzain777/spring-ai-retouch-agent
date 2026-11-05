@@ -1,0 +1,155 @@
+{
+  "checked_at": "2026-11-05T08:44:04.651626Z",
+  "follow_up_rounds": 1,
+  "cases": [
+    {
+      "goal": "把图片左右镜像一下",
+      "expected_tools": [
+        "flip_layer"
+      ],
+      "http_status": 201,
+      "status": "succeeded",
+      "tools": [
+        "flip_layer"
+      ],
+      "reply": "好，正在水平翻转。",
+      "error": null,
+      "model": "deepseek-flash",
+      "elapsed_ms": 1939,
+      "rounds": 2,
+      "prompt_tokens": 4581,
+      "completion_tokens": 56,
+      "finish_reason": "TOOL_CALLS",
+      "tool_calls": [
+        {
+          "tool": "flip_layer",
+          "arguments": "{\"direction\": \"horizontal\", \"layer_id\": \"base\"}"
+        }
+      ],
+      "text": "",
+      "rejected": null,
+      "failure": null
+    },
+    {
+      "goal": "先上下翻转，然后把透明度改成 60%",
+      "expected_tools": [
+        "flip_layer",
+        "set_layer_opacity"
+      ],
+      "http_status": 201,
+      "status": "queued",
+      "tools": [
+        "flip_layer",
+        "set_layer_opacity"
+      ],
+      "reply": "将按以下步骤执行：垂直翻转、透明度。确认后开始。",
+      "error": null,
+      "model": "deepseek-flash",
+      "elapsed_ms": 1619,
+      "rounds": 2,
+      "prompt_tokens": 4677,
+      "completion_tokens": 106,
+      "finish_reason": "TOOL_CALLS",
+      "tool_calls": [
+        {
+          "tool": "flip_layer",
+          "arguments": "{\"direction\": \"vertical\", \"layer_id\": \"base\"}"
+        },
+        {
+          "tool": "set_layer_opacity",
+          "arguments": "{\"layer_id\": \"base\", \"opacity\": 0.6}"
+        }
+      ],
+      "text": "",
+      "rejected": null,
+      "failure": null
+    },
+    {
+      "goal": "顺时针旋转 90 度，再把亮度调高一点",
+      "expected_tools": [
+        "rotate_layer",
+        "adjust_image"
+      ],
+      "http_status": 201,
+      "status": "queued",
+      "tools": [
+        "rotate_layer",
+        "adjust_image"
+      ],
+      "reply": "将按以下步骤执行：旋转、调色。确认后开始。",
+      "error": null,
+      "model": "deepseek-flash",
+      "elapsed_ms": 1439,
+      "rounds": 2,
+      "prompt_tokens": 4678,
+      "completion_tokens": 103,
+      "finish_reason": "TOOL_CALLS",
+      "tool_calls": [
+        {
+          "tool": "rotate_layer",
+          "arguments": "{\"layer_id\": \"base\", \"angle\": 90}"
+        },
+        {
+          "tool": "adjust_image",
+          "arguments": "{\"layer_id\": \"base\", \"brightness\": 0.15}"
+        }
+      ],
+      "text": "",
+      "rejected": null,
+      "failure": null
+    },
+    {
+      "goal": "裁成 1:1，然后对比度加强一些",
+      "expected_tools": [
+        "crop_canvas",
+        "adjust_image"
+      ],
+      "http_status": 201,
+      "status": "queued",
+      "tools": [
+        "crop_canvas",
+        "adjust_image"
+      ],
+      "reply": "将按以下步骤执行：裁剪、调色。确认后开始。",
+      "error": null,
+      "model": "deepseek-flash",
+      "elapsed_ms": 1636,
+      "rounds": 2,
+      "prompt_tokens": 4649,
+      "completion_tokens": 74,
+      "finish_reason": "TOOL_CALLS",
+      "tool_calls": [
+        {
+          "tool": "crop_canvas",
+          "arguments": "{\"ratio\": \"1:1\"}"
+        },
+        {
+          "tool": "adjust_image",
+          "arguments": "{\"contrast\": 0.25}"
+        }
+      ],
+      "text": "",
+      "rejected": null,
+      "failure": null
+    },
+    {
+      "goal": "帮我写一首关于春天的诗",
+      "expected_tools": [],
+      "http_status": 201,
+      "status": "succeeded",
+      "tools": [],
+      "reply": "写诗不属于修图操作，我这边只能处理图片的调色、裁切、翻转、文字等编辑，没法帮你创作诗歌。",
+      "error": null,
+      "model": "deepseek-flash",
+      "elapsed_ms": 886,
+      "rounds": 1,
+      "prompt_tokens": 2244,
+      "completion_tokens": 30,
+      "finish_reason": "STOP",
+      "tool_calls": [],
+      "text": "写诗不属于修图操作，我这边只能处理图片的调色、裁切、翻转、文字等编辑，没法帮你创作诗歌。",
+      "rejected": null,
+      "failure": null
+    }
+  ]
+}

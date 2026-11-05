@@ -13,9 +13,29 @@ public class ToolRegistry {
 
     private final Map<String, ToolSpec<?>> byName = new LinkedHashMap<>();
 
+    /** 登记顺序与上游一致（也是交给规划模型的顺序）：模型类与像素类在前，批量其次，文档工具最后。 */
     public ToolRegistry() {
-        ImageTools.all().forEach(this::register);
+        register(ModelTools.GENERATE_IMAGE);
+        register(ModelTools.REPLACE_BACKGROUND);
+        register(ModelTools.EXPAND_CANVAS);
+        register(ModelTools.UPSCALE_IMAGE);
+        register(ImageTools.REMOVE_BACKGROUND);
+        register(ImageTools.ADJUST_IMAGE);
+        register(ModelTools.ERASE_REGION);
+        register(ModelTools.REPLACE_REGION);
+        LayerTools.all().forEach(this::register);
+        register(ModelTools.GENERATE_MARKETING);
+        register(ImageTools.PREPARE_DELIVERY_SIZES);
+        register(BatchTool.BATCH_PROCESS);
         DocumentTools.all().forEach(this::register);
+        // 各分组的 all() 都要登记全：漏登记的工具在这里报出来
+        for (var group : List.of(ModelTools.all(), ImageTools.all(), LayerTools.all(), DocumentTools.all())) {
+            for (ToolSpec<?> spec : group) {
+                if (byName.get(spec.name()) != spec) {
+                    throw new IllegalStateException("工具未登记：" + spec.name());
+                }
+            }
+        }
     }
 
     private void register(ToolSpec<?> spec) {

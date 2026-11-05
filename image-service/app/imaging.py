@@ -1,4 +1,4 @@
-"""图片编解码与输出元数据。输出统一为 PNG，保留透明通道。"""
+"""图片编解码与输出元数据。输出默认 PNG（保留透明通道），批量导出可选 JPG。"""
 
 import hashlib
 import io
@@ -20,9 +20,11 @@ class Output:
     has_alpha: bool
     size_bytes: int
     sha256: str
+    name: str | None = None
 
     def as_json(self) -> dict:
         return {
+            "name": self.name,
             "key": self.key,
             "width": self.width,
             "height": self.height,
@@ -52,13 +54,20 @@ def encode_png(image: Image.Image) -> bytes:
     return buffer.getvalue()
 
 
-def describe(key: str, image: Image.Image, data: bytes) -> Output:
+def encode_jpeg(image: Image.Image) -> bytes:
+    buffer = io.BytesIO()
+    image.convert("RGB").save(buffer, format="JPEG", quality=92)
+    return buffer.getvalue()
+
+
+def describe(key: str, image: Image.Image, data: bytes, *, name: str | None = None, image_format: str = "PNG") -> Output:
     return Output(
         key=key,
         width=image.width,
         height=image.height,
-        image_format="PNG",
-        has_alpha=image.mode == "RGBA" and image.getchannel("A").getextrema()[0] < 255,
+        image_format=image_format,
+        has_alpha=image_format == "PNG" and image.mode == "RGBA" and image.getchannel("A").getextrema()[0] < 255,
         size_bytes=len(data),
         sha256=hashlib.sha256(data).hexdigest(),
+        name=name,
     )

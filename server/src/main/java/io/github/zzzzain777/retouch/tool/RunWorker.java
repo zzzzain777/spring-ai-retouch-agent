@@ -2,11 +2,13 @@ package io.github.zzzzain777.retouch.tool;
 
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -20,10 +22,13 @@ import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.json.JsonMapper;
 
 import io.github.zzzzain777.retouch.asset.Asset;
+import io.github.zzzzain777.retouch.asset.AssetKind;
 import io.github.zzzzain777.retouch.asset.AssetService;
 import io.github.zzzzain777.retouch.asset.AssetSource;
 import io.github.zzzzain777.retouch.asset.ImageFormat;
 import io.github.zzzzain777.retouch.asset.ImageMeta;
+import io.github.zzzzain777.retouch.config.ImageModelProperties;
+import io.github.zzzzain777.retouch.selection.SelectionStore;
 import io.github.zzzzain777.retouch.session.EditSession;
 import io.github.zzzzain777.retouch.session.LayerDocument;
 import io.github.zzzzain777.retouch.session.LayerDocument.Layer;
@@ -42,6 +47,7 @@ public class RunWorker implements SmartLifecycle {
 
     private static final Logger log = LoggerFactory.getLogger(RunWorker.class);
     private static final Duration LEASE_MARGIN = Duration.ofSeconds(30);
+    private static final Pattern SUBDIR = Pattern.compile("[a-z0-9-]{1,40}/");
 
     /** 执行中发现取消请求时用来跳出处理流程。 */
     static final class Canceled extends RuntimeException {
@@ -65,13 +71,16 @@ public class RunWorker implements SmartLifecycle {
     private final RunEvents events;
     private final JsonMapper json;
     private final List<RunListener> listeners;
+    private final ImageModelProperties model;
+    private final SelectionStore selections;
     private final String workerId = ManagementFactory.getRuntimeMXBean().getName();
     private final AtomicBoolean running = new AtomicBoolean();
     private ExecutorService executor;
 
     public RunWorker(WorkerProperties props, JdbcClient jdbc, TransactionTemplate tx, ToolRunRepository runs,
             ToolRegistry registry, ToolParams params, ImageServiceClient images, AssetService assets,
-            SessionService sessions, RunEvents events, JsonMapper json, List<RunListener> listeners) {
+            SessionService sessions, RunEvents events, JsonMapper json, List<RunListener> listeners,
+            ImageModelProperties model, SelectionStore selections) {
         this.props = props;
         this.jdbc = jdbc;
         this.tx = tx;
@@ -84,6 +93,8 @@ public class RunWorker implements SmartLifecycle {
         this.events = events;
         this.json = json;
         this.listeners = listeners;
+        this.model = model;
+        this.selections = selections;
     }
 
     @Override
@@ -209,6 +220,13 @@ public class RunWorker implements SmartLifecycle {
             return;
         }
         if (done != null) {
+            if (done.getStatus() == RunStatus.SUCCEEDED && outcome.clearsSelection() && done.getSessionId() != null) {
+                try {
+                    selections.clear(done.getSessionId());
+                } catch (RuntimeException redisDown) {
+                    log.warn("清除选区失败 session_id={}：{}", done.getSessionId(), redisDown.getMessage());
+                }
+            }
             afterFinish(done);
         }
     }
@@ -217,7 +235,7 @@ public class RunWorker implements SmartLifecycle {
         String prefix = ImageServiceClient.outputPrefix(run.getId(), claimed.attempt());
         return switch (outcome) {
             case ImageOutcome.ReplaceLayerImage replace -> {
-                Asset asset = register(run, prefix, replace.output(), replace.kind());
+                Asset asset = register(run, prefix, replace.output(), replace.kind(), AssetSource.TOOL);
                 EditSession record = sessions.lock(run.getUserId(), run.getSessionId());
                 LayerDocument document = sessions.document(record);
                 Layer layer = document.layers().stream().filter(l -> l.id().equals(replace.layerId())).findFirst()
@@ -238,10 +256,90 @@ public class RunWorker implements SmartLifecycle {
                         new Edit(stored, next, single ? asset : null, List.of(asset), result, true));
                 yield result;
             }
+            case ImageOutcome.Gallery gallery -> {
+                List<Asset> created = gallery.outputs().stream()
+                        .map(output -> register(run, prefix, output, gallery.kind(), AssetSource.TOOL)).toList();
+                if (created.isEmpty()) {
+                    throw new ToolError("图像服务没有返回结果");
+                }
+                EditSession record = sessions.lock(run.getUserId(), run.getSessionId());
+                var result = new LinkedHashMap<String, Object>();
+                result.put("asset_ids", created.stream().map(a -> a.getId().toString()).toList());
+                if (!gallery.variants().isEmpty()) {
+                    var labeled = new ArrayList<Map<String, Object>>();
+                    for (int i = 0; i < created.size() && i < gallery.variants().size(); i++) {
+                        var variant = new LinkedHashMap<String, Object>(gallery.variants().get(i));
+                        variant.put("asset_id", created.get(i).getId().toString());
+                        labeled.add(variant);
+                    }
+                    result.put("variants", labeled);
+                }
+                Map<String, Object> stored = json.readValue(run.getParams(), Map.class);
+                if (gallery.adoptFirst()) {
+                    Asset adopted = created.getFirst();
+                    result.put("adopt_asset_id", adopted.getId().toString());
+                    result.put("document", json.convertValue(LayerDocument.of(adopted), Map.class));
+                    sessions.apply(record, spec.name(), new Edit(stored, null, adopted, created, result, true));
+                } else {
+                    // 只进图片墙：画布不变，修订号不变
+                    sessions.apply(record, spec.name(), new Edit(stored, null, null, created, result, false));
+                }
+                yield result;
+            }
+            case ImageOutcome.Restructure restructure -> {
+                var ids = new LinkedHashMap<String, UUID>();
+                var created = new ArrayList<Asset>();
+                for (ImageOutcome.Part part : restructure.parts()) {
+                    Asset asset = register(run, prefix, part.output(), part.kind(), AssetSource.TOOL);
+                    ids.put(part.name(), asset.getId());
+                    created.add(asset);
+                }
+                EditSession record = sessions.lock(run.getUserId(), run.getSessionId());
+                LayerDocument next = restructure.build().apply(sessions.document(record), ids);
+                var result = new LinkedHashMap<String, Object>();
+                result.put("document", json.convertValue(next, Map.class));
+                result.put("asset_ids", created.stream().map(a -> a.getId().toString()).toList());
+                Map<String, Object> stored = json.readValue(run.getParams(), Map.class);
+                sessions.apply(record, spec.name(), new Edit(stored, next, null, created, result, true));
+                yield result;
+            }
+            case ImageOutcome.Unchanged unchanged -> {
+                var result = new LinkedHashMap<String, Object>();
+                if (run.getSessionId() != null) {
+                    EditSession record = sessions.get(run.getUserId(), run.getSessionId());
+                    result.put("document", json.convertValue(sessions.document(record), Map.class));
+                }
+                result.put("note", unchanged.note());
+                yield result;
+            }
+            case ImageOutcome.Candidates candidates -> {
+                List<Asset> created = candidates.outputs().stream()
+                        .map(output -> register(run, prefix, output, AssetKind.GENERATED, AssetSource.GENERATE))
+                        .toList();
+                if (created.isEmpty()) {
+                    throw new ToolError("图像模型没有返回图片");
+                }
+                yield Map.of("asset_ids", created.stream().map(a -> a.getId().toString()).toList());
+            }
+            case ImageOutcome.Batch batch -> {
+                var items = new ArrayList<Map<String, Object>>();
+                for (ImageOutcome.BatchItem item : batch.items()) {
+                    var entry = new LinkedHashMap<String, Object>();
+                    entry.put("source_id", item.sourceId());
+                    entry.put("status", item.status());
+                    entry.put("error", item.error());
+                    entry.put("output_ids", item.outputs().stream()
+                            .map(output -> register(run, prefix, output, AssetKind.EXPORT, AssetSource.TOOL)
+                                    .getId().toString())
+                            .toList());
+                    items.add(entry);
+                }
+                yield Map.of("items", items);
+            }
         };
     }
 
-    private Asset register(ToolRun run, String prefix, ImageOutput output, io.github.zzzzain777.retouch.asset.AssetKind kind) {
+    private Asset register(ToolRun run, String prefix, ImageOutput output, AssetKind kind, AssetSource source) {
         ImageFormat format;
         try {
             format = ImageFormat.valueOf(output.imageFormat());
@@ -250,8 +348,7 @@ public class RunWorker implements SmartLifecycle {
         }
         var meta = new ImageMeta(format, output.width(), output.height(), output.sizeBytes(), output.hasAlpha());
         try {
-            return assets.register(run.getUserId(), output.key(), prefix, meta, output.sha256(), kind,
-                    AssetSource.TOOL);
+            return assets.register(run.getUserId(), output.key(), prefix, meta, output.sha256(), kind, source);
         } catch (IllegalStateException foreignKey) {
             throw new ToolError("图像服务返回的结果位置不合法");
         }
@@ -343,6 +440,7 @@ public class RunWorker implements SmartLifecycle {
         private final Claimed claimed;
         private final ToolSpec<?> spec;
         private LayerDocument document;
+        private int revision;
 
         Context(ToolRun run, Claimed claimed, ToolSpec<?> spec) {
             this.run = run;
@@ -366,9 +464,86 @@ public class RunWorker implements SmartLifecycle {
                 if (run.getSessionId() == null) {
                     throw new ToolError("此工具需要在编辑会话中使用");
                 }
-                document = sessions.document(sessions.get(run.getUserId(), run.getSessionId()));
+                EditSession record = sessions.get(run.getUserId(), run.getSessionId());
+                document = sessions.document(record);
+                revision = record.getRevision();
             }
             return document;
+        }
+
+        @Override
+        public int revision() {
+            document();
+            return revision;
+        }
+
+        @Override
+        public String assetKey(UUID assetId, String missing) {
+            return assets.find(run.getUserId(), assetId).map(Asset::getStorageKey)
+                    .orElseThrow(() -> new ToolError(missing));
+        }
+
+        @Override
+        public int[] assetSize(UUID assetId) {
+            Asset asset = assets.find(run.getUserId(), assetId).orElseThrow(() -> new ToolError("素材不存在"));
+            return new int[] {asset.getWidth(), asset.getHeight()};
+        }
+
+        @Override
+        public <P> P parse(ToolSpec<P> target, Map<String, Object> raw) {
+            try {
+                return params.parse(target, raw).value();
+            } catch (io.github.zzzzain777.retouch.common.ApiException invalid) {
+                throw new ToolError(invalid.getMessage());
+            }
+        }
+
+        @Override
+        public Map<String, Object> canvas(boolean includeText) {
+            LayerDocument doc = document();
+            var layers = new ArrayList<Map<String, Object>>();
+            for (Layer layer : doc.layers()) {
+                var entry = new LinkedHashMap<String, Object>();
+                entry.put("kind", layer.kind().value());
+                if (layer.kind() == LayerKind.IMAGE && layer.assetId() != null) {
+                    // 素材不属于该用户或已不存在时不画这一层（与上游一致），不把别人的对象键交给图像服务
+                    assets.find(run.getUserId(), layer.assetId())
+                            .ifPresent(asset -> entry.put("key", asset.getStorageKey()));
+                }
+                entry.put("width", Math.max(1, layer.width()));
+                entry.put("height", Math.max(1, layer.height()));
+                entry.put("x", layer.transform().x());
+                entry.put("y", layer.transform().y());
+                entry.put("scale_x", layer.transform().scaleX());
+                entry.put("scale_y", layer.transform().scaleY());
+                entry.put("rotation", layer.transform().rotation());
+                entry.put("opacity", layer.opacity());
+                entry.put("visible", layer.visible());
+                entry.put("text", layer.text());
+                entry.put("font_size", layer.fontSize());
+                entry.put("fill", layer.fill());
+                layers.add(entry);
+            }
+            var canvas = new LinkedHashMap<String, Object>();
+            canvas.put("width", doc.width());
+            canvas.put("height", doc.height());
+            canvas.put("layers", layers);
+            canvas.put("include_text", includeText);
+            return canvas;
+        }
+
+        @Override
+        public String selectionMaskKey(UUID pinnedMaskId) {
+            if (pinnedMaskId != null) {
+                return assets.find(run.getUserId(), pinnedMaskId).filter(a -> a.getKind() == AssetKind.MASK)
+                        .map(Asset::getStorageKey).orElseThrow(() -> new ToolError("选区已失效，请重新选择"));
+            }
+            if (run.getSessionId() == null) {
+                return null;
+            }
+            return selections.get(run.getSessionId(), revision())
+                    .flatMap(stored -> assets.find(run.getUserId(), stored.maskAssetId()))
+                    .map(Asset::getStorageKey).orElse(null);
         }
 
         @Override
@@ -403,9 +578,39 @@ public class RunWorker implements SmartLifecycle {
 
         @Override
         public List<ImageOutput> call(String op, Map<String, Object> body) {
-            var request = new LinkedHashMap<>(body);
-            request.put("output_prefix", ImageServiceClient.outputPrefix(run.getId(), claimed.attempt()));
-            return images.call(op, run.getId(), claimed.attempt(), request, spec.timeout());
+            return invoke(op, null, body).outputs();
+        }
+
+        @Override
+        public ImageServiceClient.Result invoke(String op, String subdir, Map<String, Object> body) {
+            return images.invoke(op, run.getId(), claimed.attempt(), request(subdir, body), spec.timeout(), null);
+        }
+
+        @Override
+        public ImageServiceClient.Result invokeModel(String op, String subdir, Map<String, Object> body) {
+            if (!model.configured()) {
+                throw new ToolError("未配置 DASHSCOPE_API_KEY，图像模型不可用");
+            }
+            var request = request(subdir, body);
+            var config = new LinkedHashMap<String, Object>();
+            config.put("base_url", model.baseUrl());
+            config.put("edit_model", model.imageEditModel());
+            config.put("generate_model", model.textToImageModel());
+            request.put("model", config);
+            return images.invoke(op, run.getId(), claimed.attempt(), request, spec.timeout(), model.apiKey());
+        }
+
+        private Map<String, Object> request(String subdir, Map<String, Object> body) {
+            String prefix = ImageServiceClient.outputPrefix(run.getId(), claimed.attempt());
+            if (subdir != null) {
+                if (!SUBDIR.matcher(subdir).matches()) {
+                    throw new IllegalArgumentException("子目录不合法：" + subdir);
+                }
+                prefix += subdir;
+            }
+            var request = new LinkedHashMap<String, Object>(body);
+            request.put("output_prefix", prefix);
+            return request;
         }
     }
 }

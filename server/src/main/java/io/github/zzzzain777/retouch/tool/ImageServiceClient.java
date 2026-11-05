@@ -38,7 +38,29 @@ public class ImageServiceClient {
         return "runs/%s/%d/".formatted(runId, attempt);
     }
 
+    /** 一次调用的结果：输出对象与附加信息（例如物体的外接框）。 */
+    public record Result(List<ImageOutput> outputs, JsonNode meta) {
+
+        public ImageOutput named(String name) {
+            return outputs.stream().filter(o -> name.equals(o.name())).findFirst()
+                    .orElseThrow(() -> new ToolError("图像服务没有返回" + name));
+        }
+
+        public ImageOutput first() {
+            if (outputs.isEmpty()) {
+                throw new ToolError("图像服务没有返回结果");
+            }
+            return outputs.getFirst();
+        }
+    }
+
     public List<ImageOutput> call(String op, UUID runId, int attempt, Map<String, Object> body, Duration timeout) {
+        return invoke(op, runId, attempt, body, timeout, null).outputs();
+    }
+
+    /** modelKey 不为空时放进内网请求头 X-DashScope-Key，交给图像服务调用图像模型；不写日志。 */
+    public Result invoke(String op, UUID runId, int attempt, Map<String, Object> body, Duration timeout,
+            String modelKey) {
         var factory = new JdkClientHttpRequestFactory(http);
         factory.setReadTimeout(timeout);
         var client = RestClient.builder().requestFactory(factory).baseUrl(props.baseUrl()).build();
@@ -47,12 +69,18 @@ public class ImageServiceClient {
                     .header("X-Internal-Token", props.token())
                     .header("X-Run-Id", runId.toString())
                     .header("X-Attempt", Integer.toString(attempt))
+                    .headers(headers -> {
+                        if (modelKey != null && !modelKey.isBlank()) {
+                            headers.set("X-DashScope-Key", modelKey);
+                        }
+                    })
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(body)
                     .retrieve()
                     .body(JsonNode.class);
-            return json.convertValue(response.path("outputs"),
+            List<ImageOutput> outputs = json.convertValue(response.path("outputs"),
                     json.getTypeFactory().constructCollectionType(List.class, ImageOutput.class));
+            return new Result(outputs, response.path("meta"));
         } catch (RestClientResponseException failure) {
             String message = readError(failure.getResponseBodyAsString());
             throw new ToolError(message != null ? message : "图像服务处理失败（HTTP " + failure.getStatusCode().value() + "）");

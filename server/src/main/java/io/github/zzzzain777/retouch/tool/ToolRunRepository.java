@@ -16,6 +16,8 @@ public interface ToolRunRepository extends JpaRepository<ToolRun, UUID> {
     /** 计划步骤派发出的全部任务（含重试），Agent 以它为准对账步骤状态。 */
     List<ToolRun> findByTurnIdOrderByCreatedAtAsc(UUID turnId);
 
+    List<ToolRun> findByUserIdAndToolOrderByCreatedAtDesc(UUID userId, String tool, org.springframework.data.domain.Limit limit);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select r from ToolRun r where r.id = :id")
     Optional<ToolRun> lockById(UUID id);
