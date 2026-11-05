@@ -1,5 +1,6 @@
 package io.github.zzzzain777.retouch.tool;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -11,6 +12,9 @@ import org.springframework.data.jpa.repository.Query;
 public interface ToolRunRepository extends JpaRepository<ToolRun, UUID> {
 
     Optional<ToolRun> findByIdAndUserId(UUID id, UUID userId);
+
+    /** 计划步骤派发出的全部任务（含重试），Agent 以它为准对账步骤状态。 */
+    List<ToolRun> findByTurnIdOrderByCreatedAtAsc(UUID turnId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select r from ToolRun r where r.id = :id")

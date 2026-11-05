@@ -71,6 +71,9 @@ retouch:
     concurrency: 2
     poll-interval: 500ms
     recover-interval: 30s
+  agent:
+    # 兜底对账：超过 30 秒没更新的执行中轮次，按 tool_runs 重新推进（Worker 回调丢失或进程重启时）
+    reconcile-interval: 30s
 
 server:
   # 与上游对外端口一致，前端代理与评测集不用改

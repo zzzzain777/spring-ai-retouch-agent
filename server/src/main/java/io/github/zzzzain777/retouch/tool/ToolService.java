@@ -8,6 +8,8 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -31,6 +33,10 @@ public class ToolService {
     public record StepRef(UUID turnId, String stepId, int attempt) {
     }
 
+    /** 计划校验的结果：规范化后的参数与界面文案。 */
+    public record Checked(String tool, Map<String, Object> params, String label) {
+    }
+
     private final ToolRegistry registry;
     private final ToolParams params;
     private final ToolRunRepository runs;
@@ -40,13 +46,16 @@ public class ToolService {
     private final RunEvents events;
 
     public ToolService(ToolRegistry registry, ToolParams params, ToolRunRepository runs, SessionService sessions,
-            TransactionTemplate tx, JsonMapper json, RunEvents events) {
+            PlatformTransactionManager transactions, JsonMapper json, RunEvents events) {
         this.events = events;
         this.registry = registry;
         this.params = params;
         this.runs = runs;
         this.sessions = sessions;
-        this.tx = tx;
+        // 总是开独立事务：Agent 推进计划时锁着轮次行调用这里，任务与编辑要各自提交、各自回滚，
+        // 文档工具失败也不能把外层的计划更新一起标成只能回滚
+        this.tx = new TransactionTemplate(transactions);
+        this.tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         this.json = json;
     }
 
@@ -57,6 +66,16 @@ public class ToolService {
     /** 只校验不提交，Agent 规划后校验计划时用。返回规范化后的参数。 */
     public Map<String, Object> validate(String tool, Map<String, Object> raw) {
         return params.parse(spec(tool), raw).json();
+    }
+
+    /** 与 {@link #validate} 相同，另给出这一步的界面文案（例如“水平翻转”）。 */
+    public Checked check(String tool, Map<String, Object> raw) {
+        return checkTyped(spec(tool), raw);
+    }
+
+    private <P> Checked checkTyped(ToolSpec<P> spec, Map<String, Object> raw) {
+        var parsed = params.parse(spec, raw);
+        return new Checked(spec.name(), parsed.json(), spec.labelFor(parsed.value()));
     }
 
     /** 调用方须已确认 sessionId 属于 userId。 */

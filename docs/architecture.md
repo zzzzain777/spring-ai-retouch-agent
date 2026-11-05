@@ -1,6 +1,6 @@
 # 架构
 
-- 状态：**设计**（B 阶段起点，2026-11-05）。本文描述要实现的结构；每一部分实现并验证后，在 `project-state.md` 里单独标状态，本文不代表已完成。
+- 状态：**设计**（B 阶段起点，2026-11-05；B7 起按实现更新第 4、7 节）。本文描述结构；每一部分实现并验证后，在 `project-state.md` 里单独标状态，本文不代表已完成。
 - 对外契约：沿用上游 `yuyuanweb/ai-picture-editor@49f6ad8` 的 HTTP 与 SSE 接口（路径、请求体、响应字段、状态码），这样冻结评测集 `agent-behavior-v1` 和前端可以不改就对比两边。新增接口只加不改。
 - 代码来源：全部独立编写，不含上游源码。图像算法用有许可证的现成组件（rembg、Pillow、onnxruntime 等），不重写。
 
@@ -49,19 +49,25 @@ Java 里有且只有一份工具注册表 `ToolRegistry`，每个工具一个 `T
 ## 4. Agent 主路径
 
 ```text
-POST /messages ─▶ 构造画布摘要 ─▶ Spring AI ChatClient（携带 22 个工具的 Schema，
-                                   internalToolExecutionEnabled=false）
-                ─▶ 读取模型返回的 tool_calls 作为“提议”
-                ─▶ PlanValidator：工具存在 → 参数校验（ToolSpec）→ 补全 id 与线性依赖
-                    → 依赖存在性与环检测 → 步数 ≤ 8 → 钉住选区遮罩 → 记录规划时修订号
-                ─▶ 持久化 agent_turns
+POST /messages ─▶ 构造画布摘要 ─▶ Spring AI ChatClient（携带全部已登记工具的定义与参数 Schema，
+                                   关闭 ToolCallingAdvisor 自动注册）
+                ─▶ 读取模型返回的 tool_calls 作为“提议”，并把模型名、耗时、token、原样调用写进轨迹
+                ─▶ PlanValidator：工具存在 → 去掉服务端填写的隐藏参数 → 参数校验（与手动接口同一入口）
+                    → 补全 id 与线性依赖 → 依赖存在性与环检测 → 步数 ≤ 8 →（B8：钉住选区遮罩）
+                ─▶ 持久化 agent_turns（含规划时修订号与轨迹）
                 ─▶ 单步：立即派发；多步：status=queued 等确认；无计划：succeeded + 一句答复
 ```
 
-- **规划阶段不执行工具**：Spring AI 的工具自动执行关闭；注册给模型的工具回调本身一旦被调用就抛异常，并有测试守住这一点。
-- **执行只由 Java 显式调度**：`PlanExecutor.advance(turn)` 在锁住轮次行（`SELECT … FOR UPDATE`）后找就绪步骤并派发，同步步骤完成后继续推进；排队步骤完成时由完成事务调用 `advance`。
-- **确认、取消、重试**遵循上游语义：确认把等待中的步骤放行；取消把未开始的步骤与排队中的任务标为 canceled；重试把最后一个失败步骤重置为 pending 再推进。终态轮次上的确认、取消、重试返回 409。
-- **修订号**：确认时若会话修订号已不同于规划时（等待确认期间画布被改过），返回 409 并要求重新发送指令（上游记录了修订号但不校验，见 baseline G5）。
+- **规划阶段不执行工具**：Spring AI 2.0.2 的 `ToolCallingChatOptions` 已没有 `internalToolExecutionEnabled` 选项，工具执行改由 ChatClient 自动加入的 `ToolCallingAdvisor` 负责。规划调用显式关闭它的自动注册（`AdvisorParams.toolCallingAdvisorAutoRegister(false)`），模型返回的 tool_calls 原样交回 Java；注册给模型的工具只有定义没有实现，回调一旦被调用就抛异常。`PlannerNoExecutionTest` 守住这两点，并有对照用例证明不关掉时 Spring AI 确实会去执行。
+- **工具 Schema**：由 `ToolSpec` 的参数类型用 victools 生成（字段名下划线、必填与取值范围取 Bean Validation 注解、枚举取接口取值），与参数校验同源；隐藏参数不出现在 Schema 里，模型即使给了也会在校验前删掉。
+- **提示词**：本项目自写。通用规则固定；工具选择规则只收录所涉工具都已登记的条目，不引导模型调用尚未实现的工具。
+- **执行只由 Java 显式调度**：推进计划时先锁轮次行（`SELECT … FOR UPDATE`），按 `tool_runs` 对账步骤状态，再派发就绪步骤；文档工具同步完成后立即推进下一步，图像工具完成后由 Worker 回调推进。派发经 `ToolService.submit`，它总在独立事务里建任务与改文档（`REQUIRES_NEW`），工具失败不会把外层的计划更新标成只能回滚。
+- **确认、取消、重试**遵循上游语义：确认把等待中的步骤放行；取消把未开始的步骤标为 canceled、排队中的任务直接取消；重试把最后一个失败步骤重置为 pending 再推进，新建一条任务（`step_attempt` 递增）。终态轮次上的确认、取消、重试返回 409。
+- **相对上游的改动**（对应 `upstream-baseline.md` §13）：
+  - G5 修订号：确认时若会话修订号已不同于规划时（等待确认期间画布被改过），返回 409「画布在等待确认期间已被修改，请重新发送指令」，不执行旧计划。
+  - G6 取消传播：运行中的任务也会收到取消请求，Worker 在下一个检查点结束并丢弃远程结果，轮次在它结束后汇总为 canceled。
+  - 失败阻断：上游在前一步失败后，把永远不会执行的后续步骤仍算作未完成，轮次一直是 running；这里汇总为 failed，单步重试后后续步骤照常执行。
+  - 轨迹：每轮记录规划调用的模型名、耗时、token 用量、模型原样给出的工具调用与被拒原因，`GET /api/sessions/{id}/messages/{turnId}/trace` 可查（新增接口）。
 
 ## 5. 状态机
 
@@ -93,7 +99,7 @@ ToolRun：
 
 | 场景 | 处理 |
 | --- | --- |
-| 重复发送同一条指令 | `POST /messages` 支持 `Idempotency-Key` 请求头，`(session_id, key)` 唯一，重复请求返回同一轮次 |
+| 重复发送同一条指令 | `POST /messages` 支持 `Idempotency-Key` 请求头（1–64 字符），`(session_id, key)` 唯一，重复请求返回同一轮次并带 `Idempotent-Replayed: true`。限制：两个重复请求真正并发时可能各调一次模型，但只落一轮、只执行一次 |
 | 重复确认或并发确认 | 锁住轮次行后检查状态；第二次返回 409；步骤派发以 `(turn_id, step_id, attempt)` 唯一约束防止重复建任务 |
 | 迟到的结果（旧 Worker 在租约过期后才返回） | 写结果用条件更新 `WHERE id=? AND status='running' AND attempt=?`，不匹配就丢弃 |
 | Python 重复执行 | 输出键由 runId 与 attempt 决定，重复执行覆盖同一位置，不产生多余素材 |
@@ -101,7 +107,7 @@ ToolRun：
 | Python 或 DashScope 失败 | 错误映射为任务 failed 与可读错误；不自动重试非幂等工具 |
 | 规划模型不可用或返回非法计划 | 轮次 failed 或给一句答复，不派发任何工具 |
 | Redis 不可用 | SSE 退回为只发快照；选区不可用时区域工具作用于整层；健康检查报告 Redis 异常 |
-| Java 进程重启 | 启动时与定时扫描租约过期的 running 任务按上表处理；排队任务原样保留；计划从库里继续推进 |
+| Java 进程重启 | 启动时与定时扫描租约过期的 running 任务按上表处理；排队任务原样保留；启动时对所有执行中轮次对账一次，之后每 30 秒对账超过 30 秒没更新的执行中轮次：步骤状态以 `tool_runs` 为准（按派发次数认领），“任务已提交、计划未更新”之间崩溃也不会重复执行 |
 
 **限制（不宣称生产级）**：远程图像模型调用无法中途取消，只能丢弃结果；单个 Worker 线程池，未做多实例压测；没有限流与配额。
 

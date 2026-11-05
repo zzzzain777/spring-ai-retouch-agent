@@ -75,6 +75,14 @@ public class ApiClient {
         return exchange(HttpMethod.POST, path, body);
     }
 
+    /** 带额外请求头的 POST（例如 Idempotency-Key）。 */
+    public ResponseEntity<Map> post(String path, Object body, Map<String, String> extra) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        extra.forEach(headers::add);
+        return remember(http.exchange(path, HttpMethod.POST, new HttpEntity<>(body, headers(headers)), Map.class));
+    }
+
     public ResponseEntity<Map> get(String path) {
         return exchange(HttpMethod.GET, path, null);
     }

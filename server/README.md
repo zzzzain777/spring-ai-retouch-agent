@@ -25,6 +25,14 @@ cp src/main/resources/application-local.yml.example src/main/resources/applicati
 
 会真实调用一次规划模型（纯文本，不带任何工具），打印回复、模型名、token 用量和耗时，然后退出；退出码非 0 表示失败。这个检查是独立的小程序，不需要数据库、Redis 或对象存储。
 
+## 用真实模型走一遍规划接口
+
+```bash
+./mvnw test -Dtest=RealPlannerCheck -Dretouch.real-planner=true
+```
+
+经完整 HTTP 接口发三条指令（单步、多步、无关请求），规划模型用上面配置的真实密钥，中间件用 Testcontainers。只断言集成打通：拿到结构化计划、单步直接执行、多步确认前不派发、无关请求没有计划。模型给出的工具与 token 用量写进 `target/real-planner-check.json`。这不是评测，规划质量以 `eval/` 下冻结评测集的结果为准。默认的 `./mvnw test` 不运行它。
+
 ## 本地运行
 
 ```bash
@@ -53,4 +61,4 @@ curl http://127.0.0.1:7302/api/health
 ./mvnw test
 ```
 
-集成测试用 Testcontainers 启动真实的 PostgreSQL、Redis 和 S3 兼容存储（moto），需要本机有 Docker。图像工具的测试会用 `uv` 启动真实的 Python 图像服务（`../image-service`）；本机没有 `uv` 时这些测试显示为 skipped。测试不调用任何模型。
+集成测试用 Testcontainers 启动真实的 PostgreSQL、Redis 和 S3 兼容存储（moto），需要本机有 Docker。图像工具的测试会用 `uv` 启动真实的 Python 图像服务（`../image-service`）；本机没有 `uv` 时这些测试显示为 skipped。默认测试不调用任何真实模型：Agent 流程测试把规划模型换成按脚本返回的测试替身（`ScriptedChatModel`），只验证 Java 侧的计划校验、确认门、取消、重试、幂等与恢复，不代表模型的规划质量。
