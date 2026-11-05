@@ -1,0 +1,174 @@
+{
+  "base": "http://127.0.0.1:7301",
+  "image": "bottle-white.png",
+  "chat": true,
+  "started_at": "2026-11-05T13:31:48.339Z",
+  "elapsed_ms": 23149,
+  "passed": 15,
+  "total": 15,
+  "console_errors": [],
+  "http_errors": [
+    {
+      "status": 401,
+      "method": "GET",
+      "path": "/api/auth/me",
+      "expected": true
+    },
+    {
+      "status": 401,
+      "method": "GET",
+      "path": "/api/auth/me",
+      "expected": true
+    }
+  ],
+  "steps": [
+    {
+      "name": "login",
+      "ok": true,
+      "ms": 861,
+      "screenshot": "01-login.jpg",
+      "detail": {
+        "username": "ui_mw3l4b9r"
+      }
+    },
+    {
+      "name": "upload-and-session",
+      "ok": true,
+      "ms": 332,
+      "screenshot": "02-upload-and-session.jpg",
+      "detail": {
+        "revision": 1
+      }
+    },
+    {
+      "name": "tool-flip-document",
+      "ok": true,
+      "ms": 285,
+      "screenshot": "03-tool-flip-document.jpg",
+      "detail": {
+        "status": "已完成",
+        "revision": 2
+      }
+    },
+    {
+      "name": "tool-adjust-image-sse",
+      "ok": true,
+      "ms": 1389,
+      "screenshot": "04-tool-adjust-image-sse.jpg",
+      "detail": {
+        "status": "已完成 已完成 100%"
+      }
+    },
+    {
+      "name": "undo-redo-history",
+      "ok": true,
+      "ms": 246,
+      "screenshot": "05-undo-redo-history.jpg",
+      "detail": {
+        "history": 3
+      }
+    },
+    {
+      "name": "brush-selection",
+      "ok": true,
+      "ms": 698,
+      "screenshot": "06-brush-selection.jpg",
+      "detail": {
+        "selection": true
+      }
+    },
+    {
+      "name": "model-tool-without-key",
+      "ok": true,
+      "ms": 316,
+      "screenshot": "07-model-tool-without-key.jpg",
+      "detail": {
+        "error": "未配置 DASHSCOPE_API_KEY，图像模型不可用"
+      }
+    },
+    {
+      "name": "remove-background-layers",
+      "ok": true,
+      "ms": 451,
+      "screenshot": "08-remove-background-layers.jpg",
+      "detail": {
+        "layers": 1,
+        "revision": 4
+      }
+    },
+    {
+      "name": "delivery-sizes-wall",
+      "ok": true,
+      "ms": 887,
+      "screenshot": "09-delivery-sizes-wall.jpg",
+      "detail": {
+        "exports": 3
+      }
+    },
+    {
+      "name": "chat-multi-step-waits",
+      "ok": true,
+      "ms": 2400,
+      "screenshot": "10-chat-multi-step-waits.jpg",
+      "detail": {
+        "status": "queued",
+        "label": "等待确认",
+        "steps": 2
+      }
+    },
+    {
+      "name": "chat-confirm-executes",
+      "ok": true,
+      "ms": 1602,
+      "screenshot": "11-chat-confirm-executes.jpg",
+      "detail": {
+        "status": "succeeded",
+        "label": "已完成",
+        "steps": 2,
+        "revision": 6
+      }
+    },
+    {
+      "name": "chat-cancel",
+      "ok": true,
+      "ms": 2397,
+      "screenshot": "12-chat-cancel.jpg",
+      "detail": {
+        "status": "canceled",
+        "label": "已取消",
+        "steps": 2
+      }
+    },
+    {
+      "name": "chat-unrelated",
+      "ok": true,
+      "ms": 1399,
+      "screenshot": "13-chat-unrelated.jpg",
+      "detail": {
+        "status": "succeeded",
+        "label": "已完成",
+        "steps": 0,
+        "trace": "模型 deepseek-flash 耗时 1200 ms token 4532 / 22"
+      }
+    },
+    {
+      "name": "batch",
+      "ok": true,
+      "ms": 1312,
+      "screenshot": "14-batch.jpg",
+      "detail": {
+        "summary": "1 / 1 张成功，共 2 个文件。下载 zip",
+        "zip": "batch.zip"
+      }
+    },
+    {
+      "name": "generate-without-key",
+      "ok": true,
+      "ms": 352,
+      "screenshot": "15-generate-without-key.jpg",
+      "detail": {
+        "error": "未配置 DASHSCOPE_API_KEY，图像模型不可用"
+      }
+    }
+  ]
+}
