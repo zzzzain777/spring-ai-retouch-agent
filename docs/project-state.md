@@ -8,10 +8,10 @@ B 阶段已完成（提交至 `8232ede`）。
 
 A 阶段已完成（提交 `85c0c36`、`0ad7240`），下面的 A 阶段条目保留作记录。
 
-- 更新时间：2026-11-05 14:30（UTC）
+- 更新时间：2026-11-07（UTC）
 - 上游固定版本：`yuyuanweb/ai-picture-editor@49f6ad8c96740a68b7e6228a47e8e2be6876eb34`
 - 本仓库：`zzzzain777/spring-ai-retouch-agent`（公开）。A 阶段只提交文档与本人编写的评测材料，没有 Java 实现代码。
-- Java 实现：B 阶段进行中，见下方 B 阶段表。评测结果只有原版的确定性部分。
+- Java 实现：B 阶段已完成，见下方 B 阶段表；C 阶段进行中，见 C 阶段表。（本节其余条目为 A 阶段记录。）
 
 | 项 | 状态 | 证据 / 说明 |
 | --- | --- | --- |
@@ -66,7 +66,8 @@ A 阶段已完成（提交 `85c0c36`、`0ad7240`），下面的 A 阶段条目�
 | 同集复测 | 已验证 | 修复后同命令同数据集重跑：17/17，报告 `eval/reports/java-exportfix-noplanner-20261105T140823Z/`。修复前后两份报告都保留 |
 | 运行器增强：规划轨迹 | 已实现 | `run_agent_eval.py` 在每次 send 落定后取 `…/{turnId}/trace`（只有 Java 版有，原版 404 时静默跳过），token/耗时记进 `results.json` 与报告；只加观测，断言与判定不变，数据集未动（MANIFEST 不含运行器） |
 | 配对汇总脚本 | 已实现 | `eval/tools/aggregate.py`：多轮 results.json 合并为两版对照（各轮通过率、按指标合计、两版结论不同的样例、多轮不稳定样例、token 与可选成本折算）；校验各轮 MANIFEST 一致 |
-| Mac 配对评测（真实 DeepSeek，各 3 轮） | 待验收 | 原版经 `planner_proxy.py` 用 DeepSeek（`IMAGE_PROVIDER=mock`→`image_exec`），Java 版用 DeepSeek + 本地占位图像接口 `eval/tools/fake_image_model.py`；另各跑一轮 `planner_unavailable` 验 F06。云端网络拒绝 `api.deepseek.com`，只能在用户 Mac 跑 |
+| Mac 配对评测（真实 DeepSeek，各 3 轮） | 待验收 | 原版经 `planner_proxy.py` 用 DeepSeek（`IMAGE_PROVIDER=mock`→`image_exec`），Java 版用 DeepSeek + 本地占位图像接口 `eval/tools/fake_image_model.py`；另各跑一轮 `planner_unavailable` 验 F06。云端网络拒绝 `api.deepseek.com`，只能在用户 Mac 跑。**2026-11-07 核对用户 Mac**：原版（上游 `49f6ad8`，Python 3.13.18，compose 的 PostgreSQL/Redis + moto S3，API 端口 8000）已跑 3 轮 `llm,image_exec`，每轮执行 43、通过 33、失败 10（M01–M04、C01–C04、F03、A03）、跳过 1，以及 1 轮 `image_exec,planner_unavailable` 执行 17、通过 14、失败 2（F05、F06）、异常 1（A03）、跳过 27（云端同口径曾 17/17，差异待审查）；报告 `eval/reports/upstream-deepseek-r1/r2/r3-20261105T15*Z/`、`upstream-noplanner-mac-20261105T150658Z/` 与轨迹 `planner-trace-upstream-r1/r2/r3.jsonl` **未提交**，审查可比性与无密钥后再定是否入库。另一轮原版 r1 因 rembg 首次下载约 1 GB 的 `bria-rmbg-2.0` 模型超时，判为无效，已移出仓库。**Java 版 3 轮与 `planner_unavailable` 一轮均未运行**：上一个 Mac 会话跑完原版后因 Claude 账号用量额度中断。`aggregate.py` 配对汇总尚无结果 |
+| C 阶段引入文档流程 | 已实现 | 2026-11-06 用户提供 SDD 候选文档（`sdd-handoff/`，按视频示例“项目指令 → 需求 → 业务规则 → 架构与接口 → 任务拆解 → 测试与审查”组织），在 C 阶段中途接入，**不是项目开始就有**。2026-11-07 在用户 Mac 上按 HEAD `b3acd90` 逐条核对版本、路由（37 个映射）、端口、工具数与分类（文档 9、模型 9、本地图像 3、批量 1）、选区/OCR、R06 数字与 MANIFEST 后合入：根目录 `AGENTS.md`、`CLAUDE.md`（合并旧版仍有效的约束）与 `docs/` 下需求、业务规则、接口契约、架构衔接、部署、开发流程、任务、审查模板。修正：MinIO 镜像不可得改记 moto、C3/C4/C6 真实状态、前后对比视图未实现、会话导出 422 例外、`spring-webflux` 为传递依赖、DeepSeek 响应模型名。`docs/reviews/c-stage-review.md` 保持模板（全部“未运行”）。交付目录 `sdd-handoff/` 本身未提交 |
 | 出图质量 | 待验收 | 未接真实图像模型（省钱决定），RUBRIC §4 人工图像量表本轮无法打分；报告如实标注「未测」 |
 | pgVector | 不做 | 本阶段未引入向量检索，无真实数据库扩展与 Embedding 验证，不写入简历与技术栈 |
 
@@ -77,6 +78,7 @@ A 阶段已完成（提交 `85c0c36`、`0ad7240`），下面的 A 阶段条目�
 - Maven Central 可访问：Spring AI 最新 `2.0.2`，Spring Boot 最新 `4.1.2`。
 - DashScope：`dashscope.aliyuncs.com`、`dashscope-intl.aliyuncs.com` 均被拒绝（代理 403）。
 - DeepSeek：`api.deepseek.com` 被拒绝（代理 403，2026-11-05 复查）。
+- 用户 Mac（macOS arm64，真实 DeepSeek 运行地）：Corretto 21.0.12；Docker 由 OrbStack 提供；uv 0.13.7 与 Node 22.23.4 装在用户目录（`~/.local/bin`、`~/.local/node`），未用 sudo、未改 shell 配置；Maven 经仓库外的 settings 文件走本机 HTTP 代理（系统 SOCKS 代理会让 Maven 卡住）。`minio/minio` 镜像拉不到（Docker Hub 拒绝、`quay.io` 401），实际运行以 `motoserver/moto:5.1.4` 占 7313 端口替代。原版依赖需 Python 3.13（`onnxruntime` 无 3.15 轮子）；rembg 首次使用会下载约 1 GB 的 `bria-rmbg-2.0` 模型。
 
 ## 阻断
 
@@ -88,5 +90,6 @@ A 阶段已完成（提交 `85c0c36`、`0ad7240`），下面的 A 阶段条目�
 
 1. B9 已推送 `51a9086`。
 2. 用户 Mac 已装 uv 0.13.7（用户同意，免费，装在用户目录）。`0741ae4` 补跑：Java 71 个全部通过、0 跳过（含 `SelectionTests` 4、`ImageToolTests` 2、`AgentImageTests` 2），Python 14 个通过。
-3. B 阶段各项已完成并推送（`34aa219`、`8232ede`）。下一阶段（评测对比：用冻结评测集 agent-behavior-v1 以真实 DeepSeek 对比原版基线）等用户指令。
-4. 可选：会话导出接口；规划提示词与画布摘要按 22 个工具复查；工具 Schema 瘦身以降低每次规划的 prompt token。
+3. B 阶段各项已完成并推送（`34aa219`、`8232ede`）。C 阶段：会话导出修复与评测工具已推送 `b3acd90`；SDD 文档流程已接入（见 C 阶段表）。
+4. 下一轮按 `docs/tasks/c-stage-tasks.md` 从 C0 开始：先审查本机未提交的原版 3 轮与 noplanner 结果（环境、完整性、可比性、无密钥），再跑 Java 版 3 轮与 `planner_unavailable` 一轮，最后 `aggregate.py` 汇总。真实调用按最省钱原则只跑必要轮次。
+5. 可选：规划提示词与画布摘要按 22 个工具复查；工具 Schema 瘦身以降低每次规划的 prompt token。（会话导出已在 `b3acd90` 完成。）

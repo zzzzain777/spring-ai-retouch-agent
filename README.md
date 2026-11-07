@@ -2,7 +2,7 @@
 
 用 Java 21、Spring Boot 4.1.x 和 Spring AI 2.0.x 实现的 AI 修图 Agent 后端。规划模型用 DeepSeek；Python 只负责图像计算和 DashScope 图像接口调用。
 
-> 当前状态：B 阶段（Java 主路径）进行中。后端、Python 图像服务和独立前端都已可运行：上游 22 个工具全部迁移，Agent 规划经真实 DeepSeek 冒烟检查。**图像模型（DashScope）未接入**：需要它的 9 个工具只用本地假服务验证过调用链路。改造版与原版的行为评测对比还没做。各项的真实状态与证据以 [docs/project-state.md](docs/project-state.md) 为准。
+> 当前状态：C 阶段（同口径 Agent 行为评测与改进）进行中。后端、Python 图像服务和独立前端都已可运行：上游 22 个工具全部迁移，Agent 规划经真实 DeepSeek 冒烟检查与页面走查。会话导出在 C 阶段补齐，确定性回归子集 17/17。**图像模型（DashScope）未接入**：需要它的 9 个工具只用本地假服务验证过调用链路。改造版与原版的真实 DeepSeek 行为评测对比还没完成。各项的真实状态与证据以 [docs/project-state.md](docs/project-state.md) 为准。
 
 ## 组成
 
@@ -16,7 +16,7 @@
 ## 本地运行
 
 ```bash
-docker compose up -d                                              # PostgreSQL、Redis、MinIO
+docker compose up -d                                              # PostgreSQL、Redis、MinIO（MinIO 镜像拉不到时改用 moto，见 docs/deployment.md）
 (cd image-service && uv sync && uv run python -m app.main) &      # 图像服务 7303
 (cd server && ./mvnw spring-boot:run) &                           # Java 服务 7302（规划模型密钥见 server/README.md）
 (cd web && npm ci && npm run dev)                                 # 前端 http://127.0.0.1:7301
@@ -38,7 +38,9 @@ docker compose up -d                                              # PostgreSQL�
 
 | 文件 | 内容 |
 | --- | --- |
-| [CLAUDE.md](CLAUDE.md) | 项目目标、边界、技术约束与证据规则 |
+| [AGENTS.md](AGENTS.md) | 所有编码助手共用的项目目标、架构边界与证据规则 |
+| [CLAUDE.md](CLAUDE.md) | Claude 的工作顺序、阶段与提交纪律、评测规则与待解决问题表 |
+| [docs/研发流程与架构.md](docs/研发流程与架构.md) | C 阶段接入的规范文档入口：需求、业务规则、接口契约、开发流程、任务与审查 |
 | [docs/upstream-baseline.md](docs/upstream-baseline.md) | 上游基线记录（版本、许可核查、功能、工具、接口、Agent 状态机） |
 | [docs/project-state.md](docs/project-state.md) | 各阶段状态、命令、环境、证据与阻断 |
 | [docs/claim-ledger.md](docs/claim-ledger.md) | 简历陈述与代码、测试、评测证据的对照 |
