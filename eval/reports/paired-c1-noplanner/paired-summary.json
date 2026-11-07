@@ -1,0 +1,125 @@
+{
+  "dataset_manifest_sha256": "0758dd2426eff8fbc3b35523a4c0f8a8442dd58624a32c3bb36bce9848db9d83",
+  "note": "两版均不配规划模型（planner_unavailable）；原版 49f6ad8 不设 DASHSCOPE_API_KEY；Java 启动参数置空 DeepSeek 密钥；用户 Mac，2026-11-07",
+  "rounds": {
+    "upstream": [
+      {
+        "label": "upstream-noplanner-mac-v2",
+        "started_at": "2026-11-07T07:12:35+00:00",
+        "capabilities": [
+          "image_exec",
+          "planner_unavailable"
+        ],
+        "executed": 17,
+        "passed": 17,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 27,
+        "planner": {
+          "calls": 0,
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "elapsed_ms": 0
+        }
+      }
+    ],
+    "java": [
+      {
+        "label": "java-noplanner-mac",
+        "started_at": "2026-11-07T07:27:29+00:00",
+        "capabilities": [
+          "image_exec",
+          "planner_unavailable"
+        ],
+        "executed": 17,
+        "passed": 17,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 27,
+        "planner": {
+          "calls": 0,
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "elapsed_ms": 0
+        }
+      }
+    ]
+  },
+  "metrics": {
+    "upstream": {
+      "failure_handling": {
+        "pass": 6,
+        "fail": 0,
+        "skipped": 0
+      },
+      "refusal": {
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "no_side_effect": {
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "authz_isolation": {
+        "pass": 17,
+        "fail": 0,
+        "skipped": 0
+      },
+      "regression": {
+        "pass": 27,
+        "fail": 0,
+        "skipped": 0
+      }
+    },
+    "java": {
+      "failure_handling": {
+        "pass": 6,
+        "fail": 0,
+        "skipped": 0
+      },
+      "refusal": {
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "no_side_effect": {
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "authz_isolation": {
+        "pass": 17,
+        "fail": 0,
+        "skipped": 0
+      },
+      "regression": {
+        "pass": 27,
+        "fail": 0,
+        "skipped": 0
+      }
+    }
+  },
+  "hard_metrics": [
+    "no_side_effect",
+    "confirm_flow",
+    "authz_isolation",
+    "regression"
+  ],
+  "diff_cases": [],
+  "unstable_cases": [],
+  "tokens": {
+    "upstream": {},
+    "java": {}
+  },
+  "cost": {
+    "upstream": null,
+    "java": null
+  },
+  "price": {
+    "in_per_million": null,
+    "out_per_million": null,
+    "unit": ""
+  }
+}
