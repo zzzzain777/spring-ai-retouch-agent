@@ -34,7 +34,7 @@ B 阶段已能用真实 DeepSeek 走通 5 条规划冒烟用例、前端 15 步�
 
 ## 4. 运行约束
 
-- DeepSeek 真实请求在用户 Mac 上运行；Claude 云端沙箱此前访问 `api.deepseek.com` 返回 403。若网络状态变化可再测，但不能用替身代替真实评测。
+- DeepSeek 真实请求在用户 Mac 上运行；云端沙箱此前访问 `api.deepseek.com` 返回 403。若网络状态变化可再测，但不能用替身代替真实评测。
 - 原版可经 `eval/tools/planner_proxy.py` 将规划请求转给 DeepSeek，原版图像执行用自带 Mock；Java 版规划经 Spring AI，图像执行用 `eval/tools/fake_image_model.py`。两者声明 `llm,image_exec` 时，结论是规划和工作流，不是图像生成质量。
 - 凭据在本机未跟踪的 `application-local.yml` 或进程环境变量中提供；不要将密钥写入命令参数、聊天或报告。当前不启用收费 DashScope 图像模型、RDS 或 pgVector。
 

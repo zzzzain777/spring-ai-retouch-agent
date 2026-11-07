@@ -1,7 +1,7 @@
 # A 阶段：上游项目基线记录
 
 > 记录日期：2026-11-05（UTC）
-> 记录人：Claude（按 `CLAUDE.md` A 阶段执行）
+> A 阶段记录（按项目指令执行）
 > 性质：对上游仓库的**只读**研究记录。本文只描述上游代码的事实与行为，不包含上游源码。所有结论以下列 commit 为准，不以上游 README 为准。
 
 ## 1. 来源与版本
@@ -14,7 +14,7 @@
 | commit 时间 / 作者 | 2026-09-16 16:39:51 +0800 / `pine`，提交说明 `doc: README.md` |
 | 历史 | 33 个提交，2026-08-26 至 2026-09-16 |
 | 跟踪文件 | 210 个；后端 Python 约 10.1k 行（含测试），前端 `src/` 约 8.0k 行 |
-| 获取方式 | `git clone` 到 Claude 云端沙箱的临时目录，用 `git ls-remote origin HEAD` 核对远端 HEAD 与本地一致 |
+| 获取方式 | `git clone` 到云端沙箱的临时目录，用 `git ls-remote origin HEAD` 核对远端 HEAD 与本地一致 |
 
 README 中的克隆命令写的是 `yuyuanweb/ai-retouch-agent`，与实际仓库名 `ai-picture-editor` 不一致；`pyproject.toml` 的项目名也是 `ai-retouch-agent-backend`，compose 项目名为 `ai-retouch-agent`。
 
@@ -26,7 +26,7 @@ README 中的克隆命令写的是 `yuyuanweb/ai-retouch-agent`，与实际仓�
 | `frontend/package.json`、`backend/pyproject.toml` 的 license 字段 | 未声明 |
 | 全仓库搜索 license / copyright / MIT / Apache / GPL / 版权 / 授权 / 许可 / 开源 / 商用 | 无任何授权声明 |
 | README 定位 | “教学项目”，属于「编程导航」付费会员课程；README 把“完整的项目源码”列为会员权益之一 |
-| GitHub 仓库元数据 `license` | 本会话无法调用该仓库的 GitHub API（未关联仓库，代理拒绝）；`CLAUDE.md` 记录 2026-11-04 为 `null`，本次在仓库内容中未发现相反证据 |
+| GitHub 仓库元数据 `license` | 本会话无法调用该仓库的 GitHub API（未关联仓库，代理拒绝）；项目指令记录 2026-11-04 为 `null`，本次在仓库内容中未发现相反证据 |
 
 **结论**：上游没有给出任何开源许可或复用授权。按 GitHub 的[许可证说明](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/licensing-a-repository)，无许可证即默认保留全部权利，他人可在 GitHub 上查看和 Fork，但不能复制、修改或再分发。以下不构成法律意见，仅作为本项目的执行规则：
 
@@ -209,7 +209,7 @@ uv run python -m app.eval app/eval/dataset # 确定性像素评测
 
 ## 11. 本次复现记录（Q2）
 
-运行环境：Claude 云端沙箱，2026-11-05。上游代码只在沙箱里运行，不进入本仓库。
+运行环境：云端沙箱，2026-11-05。上游代码只在沙箱里运行，不进入本仓库。
 
 | 步骤 | 命令 / 做法 | 结果 |
 | --- | --- | --- |

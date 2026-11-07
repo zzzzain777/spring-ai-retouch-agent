@@ -15,7 +15,7 @@ A 阶段已完成（提交 `85c0c36`、`0ad7240`），下面的 A 阶段条目�
 
 | 项 | 状态 | 证据 / 说明 |
 | --- | --- | --- |
-| 读取 `CLAUDE.md` | 已验证 | 仓库根目录 `CLAUDE.md` |
+| 读取项目指令 | 已验证 | 本地项目指令文件（不入库） |
 | 克隆上游并固定 commit | 已验证 | `git ls-remote origin HEAD` = `49f6ad8…`，见 `upstream-baseline.md` §1 |
 | 许可证与复用授权 | 已验证 | 上游无 LICENSE / 授权声明，结论为“无复用授权”，见 §2 |
 | 功能、工具、接口、数据模型、Agent 状态机梳理 | 已验证 | 22 个工具、34 个接口，见 §4–§8，均对照源码 |
@@ -67,7 +67,7 @@ A 阶段已完成（提交 `85c0c36`、`0ad7240`），下面的 A 阶段条目�
 | 运行器增强：规划轨迹 | 已实现 | `run_agent_eval.py` 在每次 send 落定后取 `…/{turnId}/trace`（只有 Java 版有，原版 404 时静默跳过），token/耗时记进 `results.json` 与报告；只加观测，断言与判定不变，数据集未动（MANIFEST 不含运行器） |
 | 配对汇总脚本 | 已实现 | `eval/tools/aggregate.py`：多轮 results.json 合并为两版对照（各轮通过率、按指标合计、两版结论不同的样例、多轮不稳定样例、token 与可选成本折算）；校验各轮 MANIFEST 一致 |
 | Mac 配对评测（真实 DeepSeek，各 3 轮） | 已验证 | 用户 Mac，同一冻结集 `agent-behavior-v1`、`deepseek-chat` temperature 0、能力 `llm,image_exec`。原版 `49f6ad8`（经 `planner_proxy.py`，`IMAGE_PROVIDER=mock`，2026-11-05）三轮均为执行 43、通过 33、失败 10、跳过 1；Java 版（Spring AI，本地占位图像接口，2026-11-07）r1 执行 43/通过 42/异常 1、r2 43/38/异常 5、r3 43/43，跳过均为 1，失败 0。Java 的 6 个异常（r1 M02；r2 S05、S06、S08、L01、C02）全是运行器 `ReadTimeout`，对应时段 DeepSeek 接口反复返回 500/超时（服务端日志可见），属环境问题；DeepSeek 恢复后同配置只补跑这 6 例，6/6 通过（`java-deepseek-envretry-20261107T075322Z`，不替代原轮次）。汇总 `eval/reports/paired-c1/`：两版结论不同 14 例（原版三轮失败而 Java 通过：M01、M03、M04、C01、C03、C04、F03、A03；原版失败、Java 含 1 轮环境异常：M02、C02；两版都通过但 Java 有 1 轮环境异常：S05、S06、S08、L01）。硬门断言（三轮合计，通过/总数）：原版 confirm_gate 45/123、no_side_effect 12/36、confirm_flow 18/42、authz_isolation 48/51、regression 81/81；Java 113/113、35/35、38/38、51/51、81/81（异常的 6 个用例轮次不产生断言，故分母较小）。Token：原版 87 次调用 prompt 421,032 / completion 4,418（转发器轨迹）；Java 81 次 367,196 / 4,809（Java 规划轨迹）。未折算费用。原版失败归因见 `eval/reports/c1-upstream-failure-analysis.md`（87 次规划调用 0 次返回多步）。注意：两版运行日期不同（原版 11-05、Java 11-07），DeepSeek 服务端模型映射在此期间是否变化无法确认 |
-| C 阶段引入文档流程 | 已实现 | 2026-11-06 用户提供 SDD 候选文档（`sdd-handoff/`，按视频示例“项目指令 → 需求 → 业务规则 → 架构与接口 → 任务拆解 → 测试与审查”组织），在 C 阶段中途接入，**不是项目开始就有**。2026-11-07 在用户 Mac 上按 HEAD `b3acd90` 逐条核对版本、路由（37 个映射）、端口、工具数与分类（文档 9、模型 9、本地图像 3、批量 1）、选区/OCR、R06 数字与 MANIFEST 后合入：根目录 `AGENTS.md`、`CLAUDE.md`（合并旧版仍有效的约束）与 `docs/` 下需求、业务规则、接口契约、架构衔接、部署、开发流程、任务、审查模板。修正：MinIO 镜像不可得改记 moto、C3/C4/C6 真实状态、前后对比视图未实现、会话导出 422 例外、`spring-webflux` 为传递依赖、DeepSeek 响应模型名。`docs/reviews/c-stage-review.md` 保持模板（全部“未运行”）。交付目录 `sdd-handoff/` 本身未提交 |
+| C 阶段引入文档流程 | 已实现 | 2026-11-06 用户提供 SDD 候选文档（`sdd-handoff/`，按视频示例“项目指令 → 需求 → 业务规则 → 架构与接口 → 任务拆解 → 测试与审查”组织），在 C 阶段中途接入，**不是项目开始就有**。2026-11-07 在用户 Mac 上按 HEAD `b3acd90` 逐条核对版本、路由（37 个映射）、端口、工具数与分类（文档 9、模型 9、本地图像 3、批量 1）、选区/OCR、R06 数字与 MANIFEST 后合入：本地项目指令文件（合并旧版仍有效的约束，不入库）与 `docs/` 下需求、业务规则、接口契约、架构衔接、部署、开发流程、任务、审查模板。修正：MinIO 镜像不可得改记 moto、C3/C4/C6 真实状态、前后对比视图未实现、会话导出 422 例外、`spring-webflux` 为传递依赖、DeepSeek 响应模型名。`docs/reviews/c-stage-review.md` 保持模板（全部“未运行”）。交付目录 `sdd-handoff/` 本身未提交 |
 | 出图质量 | 待验收 | 未接真实图像模型（省钱决定），RUBRIC §4 人工图像量表本轮无法打分；报告如实标注「未测」 |
 | pgVector | 不做 | 本阶段未引入向量检索，无真实数据库扩展与 Embedding 验证，不写入简历与技术栈 |
 
@@ -96,7 +96,7 @@ A 阶段已完成（提交 `85c0c36`、`0ad7240`），下面的 A 阶段条目�
 
 1. **DeepSeek 密钥**：用户 2026-11-05 决定把密钥写进 Java 项目的 yml。做法是本地未跟踪的 `server/src/main/resources/application-local.yml`（示例见同目录 `.example`），不写进被跟踪的 `application.yml`。云端网络拒绝 `api.deepseek.com`，所以真实模型调用（连通性检查、原版与 Java 版的 LLM 评测）在用户 Mac 上运行。
 2. **图像模型**：用户 2026-11-05 决定为省钱暂不接 DashScope（按次收费）。需要图像模型的 9 个工具只用本地假服务验证过链路；以后要真实出图，需要在 Mac 上配置 `DASHSCOPE_API_KEY`（云端网络也拒绝 `dashscope.aliyuncs.com`）。简历与文档不得写成“已接入图像模型”。
-3. **推送方式**：Claude 的 GitHub 连接账号对本仓库无写权限，每次推送经用户 Mac 的 Remote Control 用本机 git 完成，需要用户在 Mac 上确认。
+3. **推送方式**：云端开发环境的 GitHub 连接账号对本仓库无写权限，每次推送经用户 Mac 的本机 git 完成，需要用户在 Mac 上确认。
 
 ## 下一步
 

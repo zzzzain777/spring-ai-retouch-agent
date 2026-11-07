@@ -5,7 +5,7 @@
 ## 1. 进入任务
 
 1. 检查本机 `git status --short`、HEAD、未提交文件及报告。保留已有成果，不覆盖别的会话或用户改动。
-2. 读根目录 `AGENTS.md`、`CLAUDE.md`、`docs/project-state.md`；按任务读对应 PRD、`business-rules.md`、`architecture.md`、`api-contract.md` 和实际代码。
+2. 读 `docs/project-state.md`；按任务读对应 PRD、`business-rules.md`、`architecture.md`、`api-contract.md` 和实际代码。
 3. 对照 PRD 列出本轮**一个可验收任务**的输入、输出、边界、失败路径与检查命令。对现有项目先验证是否已完成，已完成则引用证据，不重复实施。
 
 ## 2. 设计与实现

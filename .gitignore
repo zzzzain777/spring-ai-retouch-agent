@@ -32,8 +32,3 @@ Thumbs.db
 # 上游代码只用于本地基线测量，不进入本仓库
 upstream/
 upstream-src/
-
-# 本地编码助手配置，不入库
-CLAUDE.md
-AGENTS.md
-sdd-handoff/
