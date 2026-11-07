@@ -15,7 +15,7 @@
 
 先启动中间件、图像服务、Java，最后启动前端；检查 `GET /api/health`。数据库迁移由 Java 启动时 Flyway 执行。部署前检查 Docker、Java 21、Node、Python/uv 与 Maven Wrapper 可用。
 
-MinIO 拉不到时的实际做法（B10 页面走查与 C 阶段评测都这样运行）：只起 compose 里的 PostgreSQL 与 Redis，再单独起 moto 作 S3 兼容服务。Java 启动时若桶不存在会自动创建；moto 数据只在内存里，停掉即清空。
+MinIO 拉不到时的实际做法（B10 页面走查、C 阶段评测与 D 阶段最终验收都这样运行）：只起 compose 里的 PostgreSQL 与 Redis，再单独起 moto 作 S3 兼容服务。Java 启动时若桶不存在会自动创建；moto 数据只在内存里，停掉即清空。
 
 ```bash
 docker compose up -d postgres redis

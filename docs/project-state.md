@@ -2,7 +2,7 @@
 
 状态用语只用：设计 / 已实现 / 已验证 / 待验收 / 失败。
 
-## 当前阶段：C（配对评测与改进）
+## 当前阶段：D（最终验收与材料：已完成，待人工复核）
 
 B 阶段已完成（提交至 `8232ede`）。
 
@@ -71,6 +71,18 @@ A 阶段已完成（提交 `85c0c36`、`0ad7240`），下面的 A 阶段条目�
 | 出图质量 | 待验收 | 未接真实图像模型（省钱决定），RUBRIC §4 人工图像量表本轮无法打分；报告如实标注「未测」 |
 | pgVector | 不做 | 本阶段未引入向量检索，无真实数据库扩展与 Embedding 验证，不写入简历与技术栈 |
 
+## D 阶段进度
+
+| 项 | 状态 | 证据 / 说明 |
+| --- | --- | --- |
+| 最终验收：自动化测试 | 已验证 | 2026-11-07 用户 Mac：Java 17 类 82 个全部通过、0 跳过；Python 39 passed；`npm run build` 成功。`docs/evidence/d-acceptance/README.md` |
+| 最终验收：真实 DeepSeek 页面走查 | 已验证 | 15/15，16.5 s，重试 0 次，运行期间规划异常 0；`docs/evidence/ui-walkthrough/mac-deepseek-d/`。单步重试由 `AgentTests` 覆盖；运行中任务取消已实现但无专门自动化测试 |
+| C 阶段文档收口 | 已实现 | `c-stage-prd.md` 改为实际结果；`docs/reviews/c-stage-review.md` 填入证据与 SHA，人工判断项“待人工复核”，审查人与日期留空 |
+| 实现状态与证据索引 | 已实现 | `docs/implementation-state.md`、`docs/evidence-index.md` |
+| 简历与面试材料 | 已实现 | `docs/interview/resume-project.md`、`demo-script.md`、`qa.md`；陈述均回指 `claim-ledger.md` |
+| 出图质量 | 待验收 | 未接 DashScope（省钱决定），9 个模型工具只验占位链路 |
+| 人工复核 | 待验收 | `c-stage-review.md` 审查人签字；材料由用户本人确认能讲清 |
+
 ## 环境记录
 
 - 云端沙箱：Java 21.0.12、Maven 3.9.11、Gradle、Python 3.13.18、uv 0.11.32、Node 22.23、Docker 29.9（需手动 `dockerd` 启动）。
@@ -91,5 +103,5 @@ A 阶段已完成（提交 `85c0c36`、`0ad7240`），下面的 A 阶段条目�
 1. B9 已推送 `51a9086`。
 2. 用户 Mac 已装 uv 0.13.7（用户同意，免费，装在用户目录）。`0741ae4` 补跑：Java 71 个全部通过、0 跳过（含 `SelectionTests` 4、`ImageToolTests` 2、`AgentImageTests` 2），Python 14 个通过。
 3. B 阶段各项已完成并推送（`34aa219`、`8232ede`）。C 阶段：会话导出修复与评测工具已推送 `b3acd90`；SDD 文档流程已接入（见 C 阶段表）。
-4. C 阶段配对评测已完成（见 C 阶段表与 `eval/reports/paired-c1/`）。剩余限制：出图质量未测（未接 DashScope）；两版运行日期不同；`c-stage-review.md` 待人工复核签字。进入 D 阶段等用户指令。
+4. C 阶段配对评测已完成（`eval/reports/paired-c1/`）；D 阶段最终验收与材料已完成（见 D 阶段表）。剩余：出图质量未测；两版运行日期不同；`c-stage-review.md` 待人工复核签字。
 5. 可选：规划提示词与画布摘要按 22 个工具复查；工具 Schema 瘦身以降低每次规划的 prompt token。（会话导出已在 `b3acd90` 完成。）

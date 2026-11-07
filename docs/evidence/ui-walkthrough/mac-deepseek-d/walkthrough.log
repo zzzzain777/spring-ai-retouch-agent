@@ -1,0 +1,18 @@
+> retouch-agent-web@0.1.0 e2e
+> node e2e/walkthrough.mjs
+✓ login {"username":"ui_mw6evabq"}
+✓ upload-and-session {"revision":1}
+✓ tool-flip-document {"status":"已完成","revision":2}
+✓ tool-adjust-image-sse {"status":"已完成 已完成 100%"}
+✓ undo-redo-history {"history":3}
+✓ brush-selection {"selection":true}
+✓ model-tool-without-key {"error":"未配置 DASHSCOPE_API_KEY，图像模型不可用"}
+✓ remove-background-layers {"layers":1,"revision":4}
+✓ delivery-sizes-wall {"exports":3}
+✓ chat-multi-step-waits {"status":"queued","label":"等待确认","steps":2}
+✓ chat-confirm-executes {"status":"succeeded","label":"已完成","steps":2,"revision":6}
+✓ chat-cancel {"status":"canceled","label":"已取消","steps":2}
+✓ chat-unrelated {"status":"succeeded","label":"已完成","steps":0,"trace":"模型 deepseek-flash 耗时 814 ms token 4532 / 21"}
+✓ batch {"summary":"1 / 1 张成功，共 2 个文件。下载 zip","zip":"batch.zip"}
+✓ generate-without-key {"error":"未配置 DASHSCOPE_API_KEY，图像模型不可用"}
+15/15 步通过，截图在 /Users/zz/Desktop/spring-ai-retouch-agent/docs/evidence/ui-walkthrough/mac-deepseek-d

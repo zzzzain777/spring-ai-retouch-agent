@@ -2,7 +2,7 @@
 
 用 Java 21、Spring Boot 4.1.x 和 Spring AI 2.0.x 实现的 AI 修图 Agent 后端。规划模型用 DeepSeek；Python 只负责图像计算和 DashScope 图像接口调用。
 
-> 当前状态：C 阶段（同口径 Agent 行为评测与改进）进行中。后端、Python 图像服务和独立前端都已可运行：上游 22 个工具全部迁移，Agent 规划经真实 DeepSeek 冒烟检查与页面走查。会话导出在 C 阶段补齐，确定性回归子集 17/17。**图像模型（DashScope）未接入**：需要它的 9 个工具只用本地假服务验证过调用链路。改造版与原版的真实 DeepSeek 行为评测对比还没完成。各项的真实状态与证据以 [docs/project-state.md](docs/project-state.md) 为准。
+> 当前状态：A–C 阶段完成，D 阶段（最终验收与材料）已完成，**未上线**，只在本地运行与演示。上游 22 个工具全部迁移；Agent 规划用真实 DeepSeek；Java 82 个测试、Python 39 个测试、页面走查 15/15。与原版在同一冻结集上做了真实 DeepSeek 配对评测（各 3 轮），见 [eval/reports/paired-c1/](eval/reports/paired-c1/)。**图像模型（DashScope）未接入**：需要它的 9 个工具只用本地假服务验证过调用链路，出图质量未测。状态与证据以 [docs/implementation-state.md](docs/implementation-state.md)、[docs/evidence-index.md](docs/evidence-index.md) 为准。
 
 ## 组成
 
@@ -15,12 +15,18 @@
 
 ## 本地运行
 
+按顺序启动：中间件 → 图像服务 → Java 服务 → 前端，然后检查 `GET http://127.0.0.1:7302/api/health`（api、database、storage、redis 均为 ok）。
+
 ```bash
-docker compose up -d                                              # PostgreSQL、Redis、MinIO（MinIO 镜像拉不到时改用 moto，见 docs/deployment.md）
-(cd image-service && uv sync && uv run python -m app.main) &      # 图像服务 7303
-(cd server && ./mvnw spring-boot:run) &                           # Java 服务 7302（规划模型密钥见 server/README.md）
-(cd web && npm ci && npm run dev)                                 # 前端 http://127.0.0.1:7301
+docker compose up -d postgres redis                                              # PostgreSQL 7311、Redis 7312
+docker run -d --name retouch-moto-s3 -p 127.0.0.1:7313:5000 motoserver/moto:5.1.4  # S3 兼容存储 7313（compose 里的 MinIO 镜像目前拉取不到，实际一直用 moto）
+(cd image-service && uv sync && uv run python -m app.main) &                     # Python 图像服务 7303，只供 Java 调用
+(cd server && ./mvnw spring-boot:run) &                                          # Java 服务 7302，唯一对外 API；规划模型密钥见 server/README.md
+(cd web && npm ci && npm run dev)                                                # 前端 http://127.0.0.1:7301
 ```
+
+- 组件职责：Java 持有 API、登录与权限、会话与画布文档、计划与任务状态，并决定每一步能否执行；Python 图像服务无状态，只按 Java 给的对象键读写图片；PostgreSQL 存业务数据与任务队列（`tool_runs`），Redis 存选区与进度通知，S3 兼容存储放图片字节。
+- 环境：数据库用本机 Docker 里的 PostgreSQL，**没有使用阿里云 RDS**；没有任何线上部署。默认的 JWT 密钥、内部服务令牌和存储账号都是开发值。详见 [docs/deployment.md](docs/deployment.md)。
 
 ## 参考来源与复用范围
 
@@ -42,6 +48,9 @@ docker compose up -d                                              # PostgreSQL�
 | [CLAUDE.md](CLAUDE.md) | Claude 的工作顺序、阶段与提交纪律、评测规则与待解决问题表 |
 | [docs/研发流程与架构.md](docs/研发流程与架构.md) | C 阶段接入的规范文档入口：需求、业务规则、接口契约、开发流程、任务与审查 |
 | [docs/upstream-baseline.md](docs/upstream-baseline.md) | 上游基线记录（版本、许可核查、功能、工具、接口、Agent 状态机） |
+| [docs/implementation-state.md](docs/implementation-state.md) | 逐模块：已实现 / 已验证 / 未实现，各带证据 |
+| [docs/evidence-index.md](docs/evidence-index.md) | 全部证据索引：测试、评测报告、走查截图、真实模型检查、提交 |
+| [docs/interview/](docs/interview/) | 简历项目条目、5 分钟演示脚本、面试问答 |
 | [docs/project-state.md](docs/project-state.md) | 各阶段状态、命令、环境、证据与阻断 |
 | [docs/claim-ledger.md](docs/claim-ledger.md) | 简历陈述与代码、测试、评测证据的对照 |
 | [docs/architecture.md](docs/architecture.md) | 组件职责、数据权威、22 个工具的落位、状态机与时序 |

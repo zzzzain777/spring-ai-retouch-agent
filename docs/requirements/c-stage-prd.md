@@ -1,6 +1,6 @@
 # C 阶段 PRD：同口径 Agent 行为评测与改进
 
-状态：**进行中**。依据公开仓库 `b3acd906` 的 `docs/project-state.md` 与评测脚本编写，2026-11-07 按用户 Mac 工作树核对后合入；本机有未提交的真实模型报告（见 §2），执行前必须盘点。
+状态：**已完成，待人工复核**（2026-11-07）。依据公开仓库 `b3acd906` 的 `docs/project-state.md` 与评测脚本编写，2026-11-07 按用户 Mac 工作树核对后合入；原本机未提交的真实模型报告已审查入库（`3e6465c`、`ee859f4`）。
 
 ## 1. 本阶段要解决的问题
 
@@ -10,10 +10,13 @@ B 阶段已能用真实 DeepSeek 走通 5 条规划冒烟用例、前端 15 步�
 
 - `agent-behavior-v1` 共 44 例，MANIFEST SHA-256 为 `0758dd2426eff8fbc3b35523a4c0f8a8442dd58624a32c3bb36bce9848db9d83`；以仓库文件重新校验，不手工改 v1。
 - 不配规划模型的确定性子集已发现 R06 会话导出缺失：修复前执行 17 例、通过 16；修复后同口径执行 17 例、通过 17。两份报告已提交在 `eval/reports/`。
-- 原版与 Java 版各至少 3 轮的真实 DeepSeek 配对评测**尚未完成**（2026-11-07 核对用户 Mac）：
-  - 原版：本机已有 3 轮 `llm,image_exec`（`eval/reports/upstream-deepseek-r1/r2/r3-20261105T15*Z/`，每轮执行 43、通过 33、失败 10、跳过 1）和 1 轮 `image_exec,planner_unavailable`（`upstream-noplanner-mac-20261105T150658Z/`，执行 17、通过 14、失败 2、异常 1、跳过 27；云端同口径曾 17/17），以及 3 个转发器轨迹 `eval/reports/planner-trace-upstream-r1/r2/r3.jsonl`（各 29 次调用）。均**未提交**，可比性与无密钥待审查后再决定是否入库。另有一轮原版 r1 因 rembg 首次下载约 1 GB 模型超时而无效，已移出仓库，不计入。
-  - Java 版：3 轮真实 DeepSeek 与 1 轮 `planner_unavailable` **均未运行**；上一个 Mac 会话跑完原版 4 轮后因 Claude 账号用量额度中断。
-  - 配对汇总（`eval/tools/aggregate.py`）尚未产出任何结果，目前没有配对结论。
+- 原版与 Java 版各 3 轮的真实 DeepSeek 配对评测**已完成**（用户 Mac；汇总 `eval/reports/paired-c1/`，归因 `eval/reports/c1-upstream-failure-analysis.md`）：
+  - 原版（`49f6ad8`，2026-11-05）：r1–r3 均为执行 43、通过 33、失败 10、跳过 1；87 次规划调用没有一次返回多步，M01–M04、C01–C04、F03、A03 连带失败。
+  - Java 版（2026-11-07）：r1 执行 43、通过 42、异常 1；r2 43、38、异常 5；r3 43、43；失败均为 0，跳过均为 1。6 个异常全是 DeepSeek 接口超时或 500（原始轮次如实保留），同配置只补跑这 6 例 6/6 通过（`java-deepseek-envretry-20261107T075322Z`）。
+  - 硬门三轮合计（原版 vs Java）：confirm_gate 45/123 vs 113/113、no_side_effect 12/36 vs 35/35、confirm_flow 18/42 vs 38/38、authz_isolation 48/51 vs 51/51、regression 81/81 vs 81/81。
+  - `planner_unavailable`：原版（与云端同条件）17/17、Java 17/17（`eval/reports/paired-c1-noplanner/`）。
+  - token：原版 87 次 prompt 421,032 / completion 4,418；Java 81 次 367,196 / 4,809。未折算费用。
+  - 限制：两版运行日期不同（11-05 / 11-07）；出图质量未测。
 - 规划请求的模型名是 `deepseek-chat`（temperature 0）；DeepSeek 响应里返回的模型名是 `deepseek-flash`（服务端映射，见 `project-state.md`）。原版转发器轨迹记录的是请求里的模型名。
 - 真实 DashScope 图像模型未接入，主观图像质量量表本阶段写“未测”。本地占位服务只验证 `image_exec` 流程。
 
