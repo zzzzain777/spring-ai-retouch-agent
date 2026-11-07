@@ -62,7 +62,6 @@ docker run -d --name retouch-moto-s3 -p 127.0.0.1:7313:5000 motoserver/moto:5.1.
 | [docs/interview/](docs/interview/) | 项目经历条目、5 分钟演示脚本、面试问答 |
 | [docs/project-state.md](docs/project-state.md) | 各阶段状态、命令、环境、证据与阻断 |
 | [docs/claim-ledger.md](docs/claim-ledger.md) | 每条对外陈述与代码、测试、评测证据的对照 |
-| [AGENTS.md](AGENTS.md) / [CLAUDE.md](CLAUDE.md) | 编码助手共用的项目目标、架构边界与证据规则 |
 | [server/README.md](server/README.md) | Java 后端：模型密钥配置、连通性检查、构建 |
 | [image-service/README.md](image-service/README.md) | Python 图像服务的接口与测试 |
 | [web/README.md](web/README.md) | 前端运行方法与页面走查脚本 |
