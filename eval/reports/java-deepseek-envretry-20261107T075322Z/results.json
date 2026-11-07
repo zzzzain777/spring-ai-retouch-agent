@@ -1,0 +1,366 @@
+{
+  "meta": {
+    "label": "java-deepseek-envretry",
+    "base_url": "http://127.0.0.1:7302",
+    "dataset": "eval/datasets/agent-behavior-v1",
+    "manifest_sha256": "0758dd2426eff8fbc3b35523a4c0f8a8442dd58624a32c3bb36bce9848db9d83",
+    "capabilities": [
+      "image_exec",
+      "llm"
+    ],
+    "started_at": "2026-11-07T07:53:22+00:00",
+    "note": "补跑：r1/r2 中因 DeepSeek 接口超时/500 记为异常的 6 例，同配置；不替代原轮次结果"
+  },
+  "summary": {
+    "total": 6,
+    "executed": 6,
+    "passed": 6,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "by_category": {
+      "single_step": {
+        "pass": 3,
+        "fail": 0,
+        "skipped": 0,
+        "error": 0
+      },
+      "selection": {
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0,
+        "error": 0
+      },
+      "multi_step": {
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0,
+        "error": 0
+      },
+      "confirm_flow": {
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0,
+        "error": 0
+      }
+    },
+    "by_metric": {
+      "tool_selection": {
+        "pass": 8,
+        "fail": 0,
+        "skipped": 0
+      },
+      "confirm_gate": {
+        "pass": 10,
+        "fail": 0,
+        "skipped": 0
+      },
+      "execution_result": {
+        "pass": 2,
+        "fail": 0,
+        "skipped": 0
+      },
+      "plan_shape": {
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "no_side_effect": {
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0
+      },
+      "confirm_flow": {
+        "pass": 4,
+        "fail": 0,
+        "skipped": 0
+      }
+    },
+    "latency": {
+      "send_latency_s": {
+        "n": 6,
+        "p50": 1.297,
+        "p95": 1.582,
+        "max": 1.582
+      },
+      "turn_settle_s": {
+        "n": 6,
+        "p50": 1.625,
+        "p95": 2.113,
+        "max": 2.113
+      }
+    },
+    "planner": {
+      "calls": 6,
+      "prompt_tokens": 27202,
+      "completion_tokens": 325,
+      "elapsed_ms": 7026
+    }
+  },
+  "cases": [
+    {
+      "id": "S05",
+      "category": "single_step",
+      "status": "pass",
+      "reason": null,
+      "checks": [
+        "[step 1 send] PASS plan_at_send.tools eq [\"replace_background\"] (actual=[\"replace_background\"])",
+        "[step 1 send] PASS plan_at_send.tools not_contains_any [\"generate_image\", \"replace_region\"] (actual=[\"replace_background\"])",
+        "[step 1 send] PASS 单步计划不需要确认，直接开始执行 (actual=\"running\")"
+      ],
+      "outcomes": [
+        {
+          "metric": "tool_selection",
+          "result": "pass",
+          "where": "step 1 send"
+        },
+        {
+          "metric": "tool_selection",
+          "result": "pass",
+          "where": "step 1 send"
+        },
+        {
+          "metric": "confirm_gate",
+          "result": "pass",
+          "where": "step 1 send"
+        }
+      ],
+      "metrics": {
+        "send_latency_s": 1.227,
+        "turn_settle_s": 1.752,
+        "planner_prompt_tokens": 4528,
+        "planner_completion_tokens": 53,
+        "planner_elapsed_ms": 1172,
+        "planner_calls": 1
+      }
+    },
+    {
+      "id": "S06",
+      "category": "single_step",
+      "status": "pass",
+      "reason": null,
+      "checks": [
+        "[step 1 send] PASS plan_at_send.tools eq [\"expand_canvas\"] (actual=[\"expand_canvas\"])",
+        "[step 1 send] PASS plan_at_send.tools not_contains_any [\"crop_canvas\"] (actual=[\"expand_canvas\"])",
+        "[step 1 send] PASS 单步计划不需要确认，直接开始执行 (actual=\"running\")",
+        "[final] PASS history_last.params.ratio eq \"16:9\" (actual=\"16:9\")"
+      ],
+      "outcomes": [
+        {
+          "metric": "tool_selection",
+          "result": "pass",
+          "where": "step 1 send"
+        },
+        {
+          "metric": "tool_selection",
+          "result": "pass",
+          "where": "step 1 send"
+        },
+        {
+          "metric": "confirm_gate",
+          "result": "pass",
+          "where": "step 1 send"
+        },
+        {
+          "metric": "execution_result",
+          "result": "pass",
+          "where": "final"
+        }
+      ],
+      "metrics": {
+        "send_latency_s": 1.101,
+        "turn_settle_s": 1.625,
+        "planner_prompt_tokens": 4540,
+        "planner_completion_tokens": 71,
+        "planner_elapsed_ms": 1059,
+        "planner_calls": 1
+      }
+    },
+    {
+      "id": "S08",
+      "category": "single_step",
+      "status": "pass",
+      "reason": null,
+      "checks": [
+        "[step 1 send] PASS plan_at_send.tools eq [\"rotate_layer\"] (actual=[\"rotate_layer\"])",
+        "[step 1 send] PASS 单步计划不需要确认，直接开始执行 (actual=\"succeeded\")",
+        "[final] PASS top_image.transform.rotation in [90, 90.0, -270, -270.0] (actual=90.0)"
+      ],
+      "outcomes": [
+        {
+          "metric": "tool_selection",
+          "result": "pass",
+          "where": "step 1 send"
+        },
+        {
+          "metric": "confirm_gate",
+          "result": "pass",
+          "where": "step 1 send"
+        },
+        {
+          "metric": "execution_result",
+          "result": "pass",
+          "where": "final"
+        }
+      ],
+      "metrics": {
+        "send_latency_s": 0.593,
+        "turn_settle_s": 0.597,
+        "planner_prompt_tokens": 4530,
+        "planner_completion_tokens": 37,
+        "planner_elapsed_ms": 549,
+        "planner_calls": 1
+      }
+    },
+    {
+      "id": "L01",
+      "category": "selection",
+      "status": "pass",
+      "reason": null,
+      "checks": [
+        "[step 1 send] PASS plan_at_send.tools eq [\"erase_region\"] (actual=[\"erase_region\"])",
+        "[step 1 send] PASS plan_at_send.tools not_contains_any [\"remove_background\", \"replace_background\"] (actual=[\"erase_region\"])",
+        "[step 1 send] PASS 单步计划不需要确认，直接开始执行 (actual=\"running\")"
+      ],
+      "outcomes": [
+        {
+          "metric": "tool_selection",
+          "result": "pass",
+          "where": "step 1 send"
+        },
+        {
+          "metric": "tool_selection",
+          "result": "pass",
+          "where": "step 1 send"
+        },
+        {
+          "metric": "confirm_gate",
+          "result": "pass",
+          "where": "step 1 send"
+        }
+      ],
+      "metrics": {
+        "send_latency_s": 1.582,
+        "turn_settle_s": 2.113,
+        "planner_prompt_tokens": 4539,
+        "planner_completion_tokens": 22,
+        "planner_elapsed_ms": 1537,
+        "planner_calls": 1
+      }
+    },
+    {
+      "id": "M02",
+      "category": "multi_step",
+      "status": "pass",
+      "reason": null,
+      "checks": [
+        "[step 1 send] PASS plan_at_send.tools subsequence [\"adjust_image\", \"crop_canvas\"] (actual=[\"adjust_image\", \"crop_canvas\"])",
+        "[step 1 send] PASS plan_at_send.tools len_between [2, 3] (actual=[\"adjust_image\", \"crop_canvas\"])",
+        "[step 1 send] PASS 多步计划先停在等待确认 (actual=\"queued\")",
+        "[step 1 send] PASS 确认前不得派发任何工具 (actual=0)",
+        "[step 1 send] PASS 等待期间也不得派发任何工具 (actual=0)",
+        "[final] PASS 未确认或被拒绝时画布历史里不应出现任何编辑 (actual=[\"create_session\"])"
+      ],
+      "outcomes": [
+        {
+          "metric": "tool_selection",
+          "result": "pass",
+          "where": "step 1 send"
+        },
+        {
+          "metric": "plan_shape",
+          "result": "pass",
+          "where": "step 1 send"
+        },
+        {
+          "metric": "confirm_gate",
+          "result": "pass",
+          "where": "step 1 send"
+        },
+        {
+          "metric": "confirm_gate",
+          "result": "pass",
+          "where": "step 1 send"
+        },
+        {
+          "metric": "confirm_gate",
+          "result": "pass",
+          "where": "step 1 send"
+        },
+        {
+          "metric": "no_side_effect",
+          "result": "pass",
+          "where": "final"
+        }
+      ],
+      "metrics": {
+        "send_latency_s": 1.456,
+        "turn_settle_s": 1.464,
+        "planner_prompt_tokens": 4534,
+        "planner_completion_tokens": 73,
+        "planner_elapsed_ms": 1432,
+        "planner_calls": 1
+      }
+    },
+    {
+      "id": "C02",
+      "category": "confirm_flow",
+      "status": "pass",
+      "reason": null,
+      "checks": [
+        "[step 1 send] PASS 多步计划先停在等待确认 (actual=\"queued\")",
+        "[step 1 send] PASS 确认前不得派发任何工具 (actual=0)",
+        "[step 1 send] PASS 等待期间也不得派发任何工具 (actual=0)",
+        "[step 2 confirm] PASS status eq 200 (actual=200)",
+        "[step 2 confirm] PASS turn.status eq \"succeeded\" (actual=\"succeeded\")",
+        "[final] PASS top_image.transform.scale_x lt 0 (actual=-1.0)",
+        "[final] PASS history_actions subsequence [\"flip_layer\", \"adjust_image\"] (actual=[\"create_session\", \"flip_layer\", \"adjust_image\"])"
+      ],
+      "outcomes": [
+        {
+          "metric": "confirm_gate",
+          "result": "pass",
+          "where": "step 1 send"
+        },
+        {
+          "metric": "confirm_gate",
+          "result": "pass",
+          "where": "step 1 send"
+        },
+        {
+          "metric": "confirm_gate",
+          "result": "pass",
+          "where": "step 1 send"
+        },
+        {
+          "metric": "confirm_flow",
+          "result": "pass",
+          "where": "step 2 confirm"
+        },
+        {
+          "metric": "confirm_flow",
+          "result": "pass",
+          "where": "step 2 confirm"
+        },
+        {
+          "metric": "confirm_flow",
+          "result": "pass",
+          "where": "final"
+        },
+        {
+          "metric": "confirm_flow",
+          "result": "pass",
+          "where": "final"
+        }
+      ],
+      "metrics": {
+        "send_latency_s": 1.297,
+        "turn_settle_s": 1.304,
+        "planner_prompt_tokens": 4531,
+        "planner_completion_tokens": 69,
+        "planner_elapsed_ms": 1277,
+        "planner_calls": 1
+      }
+    }
+  ]
+}

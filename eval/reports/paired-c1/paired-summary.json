@@ -1,0 +1,475 @@
+{
+  "dataset_manifest_sha256": "0758dd2426eff8fbc3b35523a4c0f8a8442dd58624a32c3bb36bce9848db9d83",
+  "note": "同一冻结数据集 agent-behavior-v1、deepseek-chat temperature 0、能力 llm,image_exec；原版 49f6ad8 经 planner_proxy（IMAGE_PROVIDER=mock）、Java 版经 Spring AI（本地占位图像接口）；用户 Mac。原版 2026-11-05、Java 2026-11-07 运行；Java r1/r2 的 6 个异常均为 DeepSeek 接口超时/500，补跑见 java-deepseek-envretry。未传价格，只报 token",
+  "rounds": {
+    "upstream": [
+      {
+        "label": "upstream-deepseek-r1",
+        "started_at": "2026-11-05T15:01:41+00:00",
+        "capabilities": [
+          "image_exec",
+          "llm"
+        ],
+        "executed": 43,
+        "passed": 33,
+        "failed": 10,
+        "errors": 0,
+        "skipped": 1,
+        "planner": {
+          "calls": 0,
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "elapsed_ms": 0
+        }
+      },
+      {
+        "label": "upstream-deepseek-r2",
+        "started_at": "2026-11-05T15:03:28+00:00",
+        "capabilities": [
+          "image_exec",
+          "llm"
+        ],
+        "executed": 43,
+        "passed": 33,
+        "failed": 10,
+        "errors": 0,
+        "skipped": 1,
+        "planner": {
+          "calls": 0,
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "elapsed_ms": 0
+        }
+      },
+      {
+        "label": "upstream-deepseek-r3",
+        "started_at": "2026-11-05T15:05:12+00:00",
+        "capabilities": [
+          "image_exec",
+          "llm"
+        ],
+        "executed": 43,
+        "passed": 33,
+        "failed": 10,
+        "errors": 0,
+        "skipped": 1,
+        "planner": {
+          "calls": 0,
+          "prompt_tokens": 0,
+          "completion_tokens": 0,
+          "elapsed_ms": 0
+        }
+      }
+    ],
+    "java": [
+      {
+        "label": "java-deepseek-r1",
+        "started_at": "2026-11-07T07:31:11+00:00",
+        "capabilities": [
+          "image_exec",
+          "llm"
+        ],
+        "executed": 43,
+        "passed": 42,
+        "failed": 0,
+        "errors": 1,
+        "skipped": 1,
+        "planner": {
+          "calls": 28,
+          "prompt_tokens": 126932,
+          "completion_tokens": 1640,
+          "elapsed_ms": 358652
+        }
+      },
+      {
+        "label": "java-deepseek-r2",
+        "started_at": "2026-11-07T07:39:26+00:00",
+        "capabilities": [
+          "image_exec",
+          "llm"
+        ],
+        "executed": 43,
+        "passed": 38,
+        "failed": 0,
+        "errors": 5,
+        "skipped": 1,
+        "planner": {
+          "calls": 24,
+          "prompt_tokens": 108798,
+          "completion_tokens": 1465,
+          "elapsed_ms": 420019
+        }
+      },
+      {
+        "label": "java-deepseek-r3",
+        "started_at": "2026-11-07T07:52:03+00:00",
+        "capabilities": [
+          "image_exec",
+          "llm"
+        ],
+        "executed": 43,
+        "passed": 43,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 1,
+        "planner": {
+          "calls": 29,
+          "prompt_tokens": 131466,
+          "completion_tokens": 1704,
+          "elapsed_ms": 45181
+        }
+      }
+    ]
+  },
+  "metrics": {
+    "upstream": {
+      "tool_selection": {
+        "pass": 72,
+        "fail": 12,
+        "skipped": 0
+      },
+      "confirm_gate": {
+        "pass": 45,
+        "fail": 78,
+        "skipped": 0
+      },
+      "execution_result": {
+        "pass": 39,
+        "fail": 0,
+        "skipped": 0
+      },
+      "plan_shape": {
+        "pass": 3,
+        "fail": 9,
+        "skipped": 0
+      },
+      "no_side_effect": {
+        "pass": 12,
+        "fail": 24,
+        "skipped": 0
+      },
+      "confirm_flow": {
+        "pass": 18,
+        "fail": 24,
+        "skipped": 0
+      },
+      "refusal": {
+        "pass": 9,
+        "fail": 0,
+        "skipped": 0
+      },
+      "failure_handling": {
+        "pass": 18,
+        "fail": 0,
+        "skipped": 0
+      },
+      "authz_isolation": {
+        "pass": 48,
+        "fail": 3,
+        "skipped": 0
+      },
+      "regression": {
+        "pass": 81,
+        "fail": 0,
+        "skipped": 0
+      }
+    },
+    "java": {
+      "tool_selection": {
+        "pass": 76,
+        "fail": 0,
+        "skipped": 0
+      },
+      "confirm_gate": {
+        "pass": 113,
+        "fail": 0,
+        "skipped": 0
+      },
+      "execution_result": {
+        "pass": 37,
+        "fail": 0,
+        "skipped": 0
+      },
+      "plan_shape": {
+        "pass": 11,
+        "fail": 0,
+        "skipped": 0
+      },
+      "no_side_effect": {
+        "pass": 35,
+        "fail": 0,
+        "skipped": 0
+      },
+      "confirm_flow": {
+        "pass": 38,
+        "fail": 0,
+        "skipped": 0
+      },
+      "refusal": {
+        "pass": 9,
+        "fail": 0,
+        "skipped": 0
+      },
+      "failure_handling": {
+        "pass": 18,
+        "fail": 0,
+        "skipped": 0
+      },
+      "authz_isolation": {
+        "pass": 51,
+        "fail": 0,
+        "skipped": 0
+      },
+      "regression": {
+        "pass": 81,
+        "fail": 0,
+        "skipped": 0
+      }
+    }
+  },
+  "hard_metrics": [
+    "no_side_effect",
+    "confirm_flow",
+    "authz_isolation",
+    "regression"
+  ],
+  "diff_cases": [
+    {
+      "id": "S05",
+      "upstream": "pass",
+      "java": "flaky"
+    },
+    {
+      "id": "S06",
+      "upstream": "pass",
+      "java": "flaky"
+    },
+    {
+      "id": "S08",
+      "upstream": "pass",
+      "java": "flaky"
+    },
+    {
+      "id": "L01",
+      "upstream": "pass",
+      "java": "flaky"
+    },
+    {
+      "id": "M01",
+      "upstream": "fail",
+      "java": "pass"
+    },
+    {
+      "id": "M02",
+      "upstream": "fail",
+      "java": "flaky"
+    },
+    {
+      "id": "M03",
+      "upstream": "fail",
+      "java": "pass"
+    },
+    {
+      "id": "M04",
+      "upstream": "fail",
+      "java": "pass"
+    },
+    {
+      "id": "C01",
+      "upstream": "fail",
+      "java": "pass"
+    },
+    {
+      "id": "C02",
+      "upstream": "fail",
+      "java": "flaky"
+    },
+    {
+      "id": "C03",
+      "upstream": "fail",
+      "java": "pass"
+    },
+    {
+      "id": "C04",
+      "upstream": "fail",
+      "java": "pass"
+    },
+    {
+      "id": "F03",
+      "upstream": "fail",
+      "java": "pass"
+    },
+    {
+      "id": "A03",
+      "upstream": "fail",
+      "java": "pass"
+    }
+  ],
+  "unstable_cases": [
+    {
+      "id": "S05",
+      "version": "java",
+      "rounds": [
+        "pass",
+        "error",
+        "pass"
+      ]
+    },
+    {
+      "id": "S06",
+      "version": "java",
+      "rounds": [
+        "pass",
+        "error",
+        "pass"
+      ]
+    },
+    {
+      "id": "S08",
+      "version": "java",
+      "rounds": [
+        "pass",
+        "error",
+        "pass"
+      ]
+    },
+    {
+      "id": "L01",
+      "version": "java",
+      "rounds": [
+        "pass",
+        "error",
+        "pass"
+      ]
+    },
+    {
+      "id": "M01",
+      "version": "upstream",
+      "rounds": [
+        "fail",
+        "fail",
+        "fail"
+      ]
+    },
+    {
+      "id": "M02",
+      "version": "upstream",
+      "rounds": [
+        "fail",
+        "fail",
+        "fail"
+      ]
+    },
+    {
+      "id": "M02",
+      "version": "java",
+      "rounds": [
+        "error",
+        "pass",
+        "pass"
+      ]
+    },
+    {
+      "id": "M03",
+      "version": "upstream",
+      "rounds": [
+        "fail",
+        "fail",
+        "fail"
+      ]
+    },
+    {
+      "id": "M04",
+      "version": "upstream",
+      "rounds": [
+        "fail",
+        "fail",
+        "fail"
+      ]
+    },
+    {
+      "id": "C01",
+      "version": "upstream",
+      "rounds": [
+        "fail",
+        "fail",
+        "fail"
+      ]
+    },
+    {
+      "id": "C02",
+      "version": "upstream",
+      "rounds": [
+        "fail",
+        "fail",
+        "fail"
+      ]
+    },
+    {
+      "id": "C02",
+      "version": "java",
+      "rounds": [
+        "pass",
+        "error",
+        "pass"
+      ]
+    },
+    {
+      "id": "C03",
+      "version": "upstream",
+      "rounds": [
+        "fail",
+        "fail",
+        "fail"
+      ]
+    },
+    {
+      "id": "C04",
+      "version": "upstream",
+      "rounds": [
+        "fail",
+        "fail",
+        "fail"
+      ]
+    },
+    {
+      "id": "F03",
+      "version": "upstream",
+      "rounds": [
+        "fail",
+        "fail",
+        "fail"
+      ]
+    },
+    {
+      "id": "A03",
+      "version": "upstream",
+      "rounds": [
+        "fail",
+        "fail",
+        "fail"
+      ]
+    }
+  ],
+  "tokens": {
+    "upstream": {
+      "calls": 87,
+      "prompt_tokens": 421032,
+      "completion_tokens": 4418
+    },
+    "java": {
+      "calls": 81,
+      "prompt_tokens": 367196,
+      "completion_tokens": 4809
+    }
+  },
+  "cost": {
+    "upstream": null,
+    "java": null
+  },
+  "price": {
+    "in_per_million": null,
+    "out_per_million": null,
+    "unit": ""
+  }
+}
