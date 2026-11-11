@@ -7,6 +7,7 @@
 | 证据 | 位置 | 结果 |
 | --- | --- | --- |
 | D 阶段最终验收（Java / Python / 前端构建 / 页面走查） | `docs/evidence/d-acceptance/README.md` | Java 17 类 82 个测试全部通过、0 跳过；Python 39 passed；`npm run build` 成功；走查 15/15 |
+| 当前全量后端测试（含知识检索与合规） | `cd server && ./mvnw -q test` | 19 类 89 个通过、0 失败、1 跳过（`ComplianceCheckerTest` 7 例；跳过的是默认关闭、需真实密钥的 `EmbeddingConfigTest`） |
 | 测试代码 | `server/src/test/java/`、`image-service/tests/` | — |
 
 ## 2. 真实模型检查与页面走查
@@ -33,7 +34,16 @@
 | 不同条件的保留记录（规划服务返回 503） | `eval/reports/upstream-noplanner-mac-20261105T150658Z/` | 14/17，不作基线 |
 | 原版失败归因 | `eval/reports/c1-upstream-failure-analysis.md` | 87 次规划调用 0 次返回多步 |
 
-## 4. 设计与状态文档
+## 4. 知识检索与合规检查
+
+| 证据 | 位置 | 结果 |
+| --- | --- | --- |
+| 设计与边界 | `docs/knowledge-rag.md` | 语料 3 份 / 24 个条款 / 3 条校验规则、表结构、入库幂等、两档检索参数、规则表、接口与边界 |
+| 合规单测 | `server/src/test/java/io/github/zzzzain777/retouch/knowledge/ComplianceCheckerTest.java` | 7 例通过（含空召回、只召回部分条款） |
+| 检索实测（无自动化测试，手动运行） | `KnowledgeSearchRunner`（`retouch.knowledge.demo=true`） | 问答：「首图背景有什么要求」3 条（rule-1 0.776 排首）、「退货政策是什么」0 条 |
+| 合规实测（目标「做成京东服饰首图」） | `POST /api/compliance/check` | `flip_layer` 召回 5 条不通过（缺背景 0.724、缺比例 0.722）；`remove_background`+`crop_canvas` 通过（rule-1 0.830）；`+set_layer_text` 不通过（rule-3 0.791）；目标无关时召回 0 条不通过 |
+
+## 5. 设计与状态文档
 
 | 文档 | 内容 |
 | --- | --- |
@@ -42,10 +52,11 @@
 | `docs/implementation-state.md` | 逐模块已实现 / 已验证 / 未实现 |
 | `docs/project-state.md` | 各阶段状态、环境、阻断与下一步 |
 | `docs/claim-ledger.md` | 简历陈述与证据的对照 |
+| `docs/knowledge-rag.md` | 规范检索与合规检查：语料、入库、两档检索、规则表、接口与边界 |
 | `docs/reviews/c-stage-review.md` | C 阶段审查记录（待人工复核） |
 | `docs/interview/` | 简历条目、演示脚本、面试问答 |
 
-## 5. 提交
+## 6. 提交
 
 | 提交 | 内容 |
 | --- | --- |

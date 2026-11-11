@@ -17,4 +17,5 @@
 | 文生图、批量处理与 ZIP、会话导出 | 已验证（流程） | 批量：页面走查 batch；会话导出：`SessionExportTests` 4、评测 R06 16/17→17/17；文生图：未配置模型时明确失败 | 文生图与模型类批量操作的出图质量未测 |
 | 前端（React + Vite + TypeScript） | 已验证 | `npm run build`；页面走查 15/15（`docs/evidence/ui-walkthrough/`） | 无画布上直接拖拽/缩放图层的手势；无前后对比视图 |
 | 评测体系（冻结 44 例、运行器、转发器、汇总、占位图像接口） | 已验证 | `eval/`；原版/Java 配对 `eval/reports/paired-c1/`、`paired-c1-noplanner/`；失败归因 `eval/reports/c1-upstream-failure-analysis.md` | 两版运行日期不同（原版 11-05、Java 11-07）；Java 原始轮次有 6 次 DeepSeek 接口异常（已补跑，原记录保留）；图像主观质量量表未打分 |
+| 规范检索与合规检查（pgvector） | 已验证 | `docs/knowledge-rag.md`；`ComplianceCheckerTest` 7；全量 89 通过、1 跳过；`POST /api/compliance/check` 实测四组计划；`KnowledgeSearchRunner` 手动冒烟（问答命中/无关返回空、合规四组） | **只做计划级校验**，不验证执行结果；**召回不足等于漏检**（只判召回到的条款，故空召回不放行）；无生成步骤；规则为关键词映射，覆盖「背景」「文字/促销」「比例」三类；语料 3 份 / 24 个条款 / 3 条规则；阈值由少量手工查询试出；pgvector 侧无自动化测试；首次调用懒加载做 24 条 embedding，较慢 |
 | 部署 | 已实现（本地） | `docker-compose.yml`、`docs/deployment.md` | **未上线**；未用阿里云 RDS；MinIO 镜像拉取不到，实际以 moto 作 S3 兼容存储；默认密钥/令牌为开发值 |

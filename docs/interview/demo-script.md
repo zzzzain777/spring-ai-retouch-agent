@@ -20,5 +20,6 @@ DeepSeek 不可用时的备选：直接展示 `docs/evidence/ui-walkthrough/mac-
 - 选区：点“笔刷”涂一块区域，选“局部替换”——说明选区绑定修订号；因未接 DashScope，这里会明确提示“未配置 DASHSCOPE_API_KEY”，不伪造结果。
 - 批量处理页：选图、加“去背景 + 投放尺寸”、导出 zip——说明每张图是独立子任务。
 - 单步重试与租约恢复：走查里不演示，指向 `AgentTests.failedStepBlocksTheRestAndRetryRunsItAgain`、`ImageToolTests.expiredLeaseIsRequeuedForIdempotentToolsAndFailsWhenAttemptsAreUsedUp`。
+- 规范检索与合规检查：`POST /api/compliance/check`（需登录）。goal 固定为「把这张商品图做成京东服饰类目的首图」，jd/apparel 下传 `{"tools":["flip_layer"]}` 不通过（缺去背景、缺比例工具），传 `{"tools":["remove_background","crop_canvas"]}` 通过，再传 `{"tools":["remove_background","set_layer_text"]}` 不通过（禁止改文字层）；最后把 goal 换成「帮我写一首关于春天的诗」，召回 0 条、直接不通过——**决定查哪些条款的是检索**。响应里带检索词、召回条款出处与相似度。细节见 `docs/knowledge-rag.md`。
 
-演示中主动说明的边界：出图质量未测（未接 DashScope）；点选为圆形近似；无拖拽手势与前后对比；本地运行、未上线。
+演示中主动说明的边界：出图质量未测（未接 DashScope）；合规只做计划级校验、召回不足等于漏检（故空召回不放行）、规则覆盖「背景」「文字/促销」「比例」三类、语料 3 份 / 24 个条款 / 3 条规则；点选为圆形近似；无拖拽手势与前后对比；本地运行、未上线。
