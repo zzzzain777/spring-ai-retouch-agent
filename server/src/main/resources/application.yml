@@ -31,6 +31,13 @@ spring:
     redis:
       url: ${REDIS_URL:redis://127.0.0.1:7312/0}
   ai:
+    vectorstore:
+      pgvector:
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+        dimensions: 1024
+        initialize-schema: true
+        table-name: vector_store
     # 规划模型：OpenAI 兼容接口。默认 DeepSeek；改用 DashScope 通义千问时见 application-local.yml.example
     openai:
       api-key: ${DEEPSEEK_API_KEY:}
@@ -60,6 +67,47 @@ retouch:
       base-url: https://dashscope.aliyuncs.com
       text-to-image-model: qwen-image-3.0-pro
       image-edit-model: qwen-image-edit-max
+  # 规范检索与合规校验：嵌入模型走 OpenAI 兼容接口，服务商、地址与模型名都从环境变量来
+  knowledge:
+    embedding:
+      api-key: ${EMBEDDING_API_KEY:}
+      base-url: ${EMBEDDING_BASE_URL:}
+      model: ${EMBEDDING_MODEL:}
+    # 规范问答检索：元数据过滤后取相似度 Top-K，低于阈值不返回
+    top-k: 3
+    similarity-threshold: 0.5
+    # 合规检查：阈值比问答低、条数更多，宁可多召回几条再逐条判规则
+    compliance:
+      top-k: 5
+      similarity-threshold: 0.3
+      # 规则表：把规范条款里的关键词映射成「计划必须包含 / 禁止包含」的工具，新增检查项不改代码
+      rules:
+        - id: background-white
+          message: 背景必须纯白
+          keywords:
+            - 纯白
+            - 白底
+            - 白色背景
+          require-any:
+            - remove_background
+            - replace_background
+        - id: no-text
+          message: 主图不得出现文字/促销元素
+          keywords:
+            - 促销
+            - 水印
+            - 文字
+          forbid:
+            - set_layer_text
+        - id: square-size
+          message: 首图需裁剪或补边到规定比例
+          keywords:
+            - 正方形
+            - 比例
+          require-any:
+            - crop_canvas
+            - prepare_delivery_sizes
+            - expand_canvas
 
   # Python 图像服务：只在内网监听，Java 是唯一调用方
   image-service:

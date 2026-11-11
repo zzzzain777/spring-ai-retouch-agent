@@ -35,3 +35,13 @@ retouch:
     dashscope:
       # 图像模型用 DashScope；暂时不用图像功能可以留空
       api-key:
+
+  # 规范检索的嵌入模型：OpenAI 兼容接口即可（示例用阿里云百炼）。
+  # 与图像模型分开配置：只想试规范检索时，不会连带把图像模型的密钥也打开。
+  knowledge:
+    embedding:
+      api-key: 在这里填嵌入模型的 key
+      # 百炼：https://dashscope.aliyuncs.com/compatible-mode/v1；用自建工作空间时换成对应地址
+      base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      # 维度要和 spring.ai.vectorstore.pgvector.dimensions（默认 1024）一致
+      model: text-embedding-v4

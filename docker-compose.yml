@@ -1,7 +1,7 @@
 # 本地开发用中间件。端口与上游一致，方便对照评测。
 services:
   postgres:
-    image: postgres:17-alpine
+    image: pgvector/pgvector:pg17
     environment:
       POSTGRES_DB: retouch
       POSTGRES_USER: retouch

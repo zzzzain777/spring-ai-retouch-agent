@@ -18,7 +18,7 @@ public class TestcontainersConfiguration {
     @Bean
     @ServiceConnection
     PostgreSQLContainer postgres() {
-        return new PostgreSQLContainer(DockerImageName.parse("postgres:17-alpine"));
+        return new PostgreSQLContainer(DockerImageName.parse("pgvector/pgvector:pg17"));
     }
 
     @Bean

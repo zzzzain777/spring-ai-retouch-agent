@@ -103,6 +103,12 @@
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-model-openai</artifactId>
         </dependency>
+
+        <!-- 规范/政策向量检索：PostgreSQL + pgvector -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-vector-store-pgvector</artifactId>
+        </dependency>
         <!-- 工具参数 Schema 由参数类型生成：字段说明取 Jackson 注解，取值范围与必填取 Bean Validation 注解 -->
         <dependency>
             <groupId>com.github.victools</groupId>

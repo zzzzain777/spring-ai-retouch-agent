@@ -32,3 +32,6 @@ Thumbs.db
 # 上游代码只用于本地基线测量，不进入本仓库
 upstream/
 upstream-src/
+
+# 个人学习计划，不入库
+docs/interview/study-plan.md

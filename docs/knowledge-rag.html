@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="规范检索与合规校验：按当前代码的逐文件精读、简历对照、实测数据与面试问答">
+<title>规范检索与合规校验 · 代码精读</title>
+<style>
+:root{
+  --bg:#F6F7F9; --surface:#FFFFFF; --sunk:#EEF1F4;
+  --ink:#16191D; --ink-2:#444B55; --ink-3:#6B7480;
+  --line:#DDE2E8; --accent:#1F6FEB; --ok:#1A7F4B; --warn:#B45309; --bad:#C2410C;
+  --code-bg:#1B1F24; --code-ink:#E6EAF0;
+  --radius:12px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1216; --surface:#171B21; --sunk:#1E242B;
+    --ink:#E9EDF2; --ink-2:#B9C2CD; --ink-3:#8A95A3;
+    --line:#2A313A; --accent:#6CA6FF; --ok:#4ADE80; --warn:#FBBF24; --bad:#FB923C;
+    --code-bg:#0B0E12; --code-ink:#DCE3EC;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1216; --surface:#171B21; --sunk:#1E242B;
+  --ink:#E9EDF2; --ink-2:#B9C2CD; --ink-3:#8A95A3;
+  --line:#2A313A; --accent:#6CA6FF; --ok:#4ADE80; --warn:#FBBF24; --bad:#FB923C;
+  --code-bg:#0B0E12; --code-ink:#DCE3EC;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:16px/1.75 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  padding:0 16px;
+}
+.wrap{max-width:860px;margin:0 auto;padding:40px 0 96px}
+header.top{margin-bottom:28px}
+h1{font-size:1.75rem;line-height:1.3;margin:0 0 8px}
+.sub{color:var(--ink-3);font-size:.95rem;margin:0}
+h2{font-size:1.3rem;margin:48px 0 12px;padding-top:12px;border-top:1px solid var(--line)}
+h3{font-size:1.05rem;margin:28px 0 8px}
+h4{font-size:.95rem;margin:18px 0 6px;color:var(--ink-2)}
+p{margin:10px 0}
+ul,ol{margin:10px 0;padding-left:1.3em}
+li{margin:6px 0}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.88em;background:var(--sunk);padding:.12em .36em;border-radius:5px}
+pre{background:var(--code-bg);color:var(--code-ink);padding:14px 16px;border-radius:var(--radius);overflow-x:auto;margin:12px 0}
+pre code{background:none;padding:0;color:inherit;font-size:.82rem;line-height:1.6}
+a{color:var(--accent)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin:14px 0}
+.note{border-left:3px solid var(--accent);background:var(--sunk);border-radius:0 8px 8px 0;padding:12px 16px;margin:14px 0}
+.note.warn{border-left-color:var(--warn)}
+.note.bad{border-left-color:var(--bad)}
+.note p:first-child{margin-top:0}.note p:last-child{margin-bottom:0}
+.tag{display:inline-block;font-size:.75rem;padding:.1em .5em;border-radius:99px;border:1px solid var(--line);color:var(--ink-3);background:var(--surface)}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:.9rem;display:block;overflow-x:auto}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--sunk);font-weight:600;white-space:nowrap}
+.ok{color:var(--ok);font-weight:600}
+.no{color:var(--bad);font-weight:600}
+.toc{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 18px;margin:20px 0 0}
+.toc ol{margin:6px 0;padding-left:1.2em}
+.toc a{text-decoration:none}
+.q{font-weight:600;margin:20px 0 6px}
+.q::before{content:"Q ";color:var(--accent)}
+.a{color:var(--ink-2)}
+.a::before{content:"A ";color:var(--ink-3);font-weight:600}
+.file{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem;color:var(--ink-3);word-break:break-all}
+code{overflow-wrap:anywhere}
+p,li,td,th{overflow-wrap:break-word}
+footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--line);color:var(--ink-3);font-size:.85rem}
+@media (max-width:600px){ .wrap{padding:28px 0 72px} h1{font-size:1.45rem} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>规范检索与合规校验 · 代码精读</h1>
+  <p class="sub">对应仓库当前代码（<span class="file">server/src/main/java/io/github/zzzzain777/retouch/knowledge/</span>）· 与简历那条逐句对照 · 含实测数据与面试问答</p>
+</header>
+
+<div class="note">
+  <p><strong>这页怎么用。</strong>从第 1 节读到第 3 节，你就知道这个模块在干什么、一次请求怎么流动。第 4 节逐个文件读代码，每个文件都给出「为什么这么写、不这么写会怎样」。第 7 节是边界，面试一定会问到。第 8 节是问答，第 9 节是你自己动手跑一遍的清单 —— <strong>跑过一遍再背，比只读十遍管用</strong>。</p>
+</div>
+
+<div class="toc">
+  <strong>目录</strong>
+  <ol>
+    <li><a href="#why">这个模块解决什么问题</a></li>
+    <li><a href="#resume">简历逐句对照</a></li>
+    <li><a href="#flow">一次请求的完整流转</a></li>
+    <li><a href="#files">七个文件逐个精读</a></li>
+    <li><a href="#config">配置项全解</a></li>
+    <li><a href="#data">实测数据</a></li>
+    <li><a href="#limits">边界与已知代价</a></li>
+    <li><a href="#qa">面试问答</a></li>
+    <li><a href="#hands">动手验证清单</a></li>
+  </ol>
+</div>
+
+<h2 id="why">1. 这个模块解决什么问题</h2>
+
+<p>主项目是一个修图 Agent：用户说一句话，模型给出工具调用提议，Java 校验后执行。但模型不知道「京东服饰类目的首图必须白底、不许加促销文字」这类平台规范。把规范贴进提示词有三个问题：规范一多提示词就爆、模型可能视而不见、出了问题无法追溯是哪条规范。</p>
+
+<p>这个模块的做法是：<strong>把规范做成可检索的知识库，把检索到的条款变成对「计划」的硬校验</strong>。</p>
+
+<ul>
+  <li>检索不到规范 → 不通过，交人工核对；</li>
+  <li>计划违反召回到的条款 → 不通过，列出条款、原因与出处；</li>
+  <li>计划满足 → 放行。</li>
+</ul>
+
+<div class="note warn">
+  <p><strong>它不是聊天问答式的 RAG。</strong>检索结果进的是校验器，不交给模型改写，<strong>没有生成（Generation）那一步</strong>。面试时别主动叫它 RAG，不然会被追问「你的 G 在哪」。准确说法是「向量检索 + 规则硬校验」，或者「用检索给校验器供给约束」。</p>
+</div>
+
+<p>另外它是<strong>独立接口</strong>（<code>POST /api/compliance/check</code>），没有接进主对话流程。这是刻意的：不动 <code>Planner</code> 和 <code>AgentService</code>，现有的 82 个测试和行为评测结果都不受影响。代价是目前得由调用方主动调它。</p>
+
+<h2 id="resume">2. 简历逐句对照</h2>
+
+<p>简历上这条：</p>
+
+<div class="card">
+  <p><strong>规范检索与合规校验</strong>（独立接口，未接入主对话）：把平台/类目规范按条款切块、生成 Embedding 存入 pgvector，按内容哈希判重、重启不重复入库；合规检查用「本轮目标 + 计划里的工具中文名」检索适用条款（元数据过滤 + Top-5、阈值 0.3），再由可配置规则表（必须去背景、禁止改文字层、需裁剪到规定比例）转成对工具计划的硬校验，返回违规条款出处与相似度供人工复核；规范问答另走一档更严的参数（Top-3、阈值 0.5），无关问题返回空。当前为 3 份模拟规范、24 个条款、3 条校验规则。</p>
+</div>
+
+<p>每一句背后的代码：</p>
+
+<table>
+<thead><tr><th>简历里的话</th><th>代码在哪</th><th>怎么证明</th></tr></thead>
+<tbody>
+<tr><td>按条款切块</td><td><code>KnowledgeDocumentLoader.parse()</code> 按 <code>^##</code> 切</td><td>日志「规范加载完成：24 个片段」</td></tr>
+<tr><td>生成 Embedding 存入 pgvector</td><td><code>EmbeddingConfig</code> + <code>KnowledgeIndexService.indexAll()</code></td><td><code>select count(*) from vector_store</code> = 24</td></tr>
+<tr><td>按内容哈希判重、重启不重复入库</td><td><code>KnowledgeIndexService</code> 的 SHA-256 与 <code>knowledge_doc.content_hash</code></td><td>重启日志「未变化，跳过入库」</td></tr>
+<tr><td>用「目标 + 工具中文名」检索</td><td><code>ComplianceChecker.query()</code></td><td>响应里的 <code>query</code> 字段</td></tr>
+<tr><td>元数据过滤 + Top-5、阈值 0.3</td><td><code>KnowledgeRetriever.searchForCompliance()</code></td><td><code>application.yml</code> 的 <code>compliance.top-k / similarity-threshold</code></td></tr>
+<tr><td>可配置规则表</td><td><code>ComplianceRuleProperties</code> 绑定 yml</td><td>加一条规则不用改 Java</td></tr>
+<tr><td>硬校验</td><td><code>ComplianceChecker.check()</code> 的 <code>require-any</code> / <code>forbid</code></td><td><code>ComplianceCheckerTest</code> 7 例</td></tr>
+<tr><td>返回条款出处与相似度</td><td><code>Finding(sourceRef, clause, score, ...)</code></td><td>响应 JSON</td></tr>
+<tr><td>问答另走 Top-3 / 0.5</td><td><code>KnowledgeRetriever.search()</code></td><td>「退货政策是什么」召回 0 条</td></tr>
+<tr><td>3 份规范 / 24 条款 / 3 条规则</td><td><code>resources/knowledge/*.md</code>、yml 的 <code>rules</code></td><td><code>grep -c '^## ' *.md</code></td></tr>
+</tbody>
+</table>
+
+<div class="note bad">
+  <p><strong>简历上不能说的话。</strong>别说「完整 RAG 链路」「检索增强生成」—— 没有生成。别说「接入了 Agent 主流程」—— 是独立接口。别把 24 个条款说成「知识库」规模，被问语料量就如实说 3 份模拟规范、自己写的。</p>
+</div>
+
+<h2 id="flow">3. 一次请求的完整流转</h2>
+
+<p>以这个请求为例：</p>
+
+<pre><code>POST /api/compliance/check        （需登录，SecurityConfig 里 anyRequest().authenticated()）
+{
+  "platform": "jd",
+  "category": "apparel",
+  "goal": "把这张商品图做成京东服饰类目的首图",
+  "tools": ["flip_layer"]
+}</code></pre>
+
+<ol>
+  <li><strong><code>ComplianceController</code></strong> 收请求，<code>@Valid</code> 校验四个字段非空（goal 还限长 500）。</li>
+  <li><strong><code>ComplianceChecker.check()</code></strong> 先调 <code>indexService.ensureIndexed()</code>：首次调用才把规范灌进向量库，之后直接返回。</li>
+  <li><strong>拼检索词</strong>：<code>query()</code> 把 goal 和工具的<em>中文名</em>拼起来 —— <code>flip_layer</code> 查 <code>ToolRegistry</code> 得到「翻转」，最终得到<br><code>把这张商品图做成京东服饰类目的首图；计划操作：翻转</code></li>
+  <li><strong>检索</strong>：<code>searchForCompliance()</code> 先按 <code>platform == 'jd' and category == 'apparel'</code> 过滤元数据，再做向量 Top-5、阈值 0.3。本例召回 5 条：rule-7、rule-3、rule-1、rule-2、rule-8。</li>
+  <li><strong>空召回就结束</strong>：召回为空直接返回「没有检索到适用规范，需人工核对」，不放行。</li>
+  <li><strong>判规则</strong>：对召回到的每条条款，逐条规则看关键词是否出现在条款原文里（<code>String.contains</code>）。命中后检查计划工具：<code>require-any</code> 要求计划含其中之一，<code>forbid</code> 要求计划不含。</li>
+  <li><strong>汇总返回</strong>：<code>passed</code>、检索词、召回出处、逐条 <code>findings</code>（带相似度）、<code>violations</code>。</li>
+</ol>
+
+<p>本例结果：<span class="no">不通过</span>。rule-1（背景必须纯白，0.724）缺 <code>remove_background</code>；rule-2（需裁剪或补边到规定比例，0.722）缺 <code>crop_canvas</code>。rule-3（禁止文字）命中但满足，因为计划里没有 <code>set_layer_text</code>。</p>
+
+<div class="note">
+  <p><strong>一句话记住整条链路：</strong>目标 + 工具 → 拼成检索词 → 元数据过滤 + 向量召回 → 规则表逐条判 → 通过 / 列出违规条款。</p>
+</div>
+
+<h2 id="files">4. 七个文件逐个精读</h2>
+
+<p>全部在 <span class="file">server/src/main/java/io/github/zzzzain777/retouch/knowledge/</span>，另有一个 <code>config/EmbeddingConfig.java</code> 和一张建表 SQL。</p>
+
+<h3>4.1 KnowledgeDocumentLoader —— 把 Markdown 切成带元数据的片段</h3>
+
+<p><strong>职责</strong>：读 <code>classpath:knowledge/*.md</code>，解析开头的 front-matter，按 <code>##</code> 把正文切成一条条条款。</p>
+
+<pre><code>String[] parts = body.split("(?m)^##\\s+");
+for (int i = 1; i &lt; parts.length; i++) {
+    String part = parts[i];
+    int nl = part.indexOf('\n');
+    String heading = (nl &gt;= 0 ? part.substring(0, nl) : part).trim();   // 「rule-1 背景」
+    String text    = (nl &gt;= 0 ? part.substring(nl + 1) : "").trim();     // 条款正文
+    if (text.isEmpty()) continue;
+
+    String ruleId = heading.split("\\s+")[0];                            // 「rule-1」
+    Map&lt;String, Object&gt; m = new LinkedHashMap&lt;&gt;();
+    m.put("docId", docId);        m.put("docVersion", version);
+    m.put("platform", platform);  m.put("category", category);
+    m.put("ruleId", ruleId);      m.put("sourceRef", docId + "#" + ruleId);
+    out.add(new Document(heading + "\n" + text, m));
+}</code></pre>
+
+<h4>为什么按 <code>##</code> 切，而不是按字数切</h4>
+<p>通用 RAG 常按固定字数切块（比如 500 字一块，重叠 50 字），因为文档结构不可控。这里的规范是结构化的，<strong>一条条款就是一个语义单元</strong>，按标题切有三个好处：不会把「背景必须纯白」和「尺寸 800x800」切进同一块导致检索含混；每块天然对应一个可引用的编号；<code>sourceRef</code>（如 <code>JD-APPAREL-001#rule-1</code>）能直接给人看。</p>
+<p><strong>不这么做会怎样</strong>：按字数切，命中后你只能说「大概在第 3 块」，没法告诉业务方违反的是哪一条；而且一块里混着多条规则，关键词匹配会误触发。</p>
+
+<h4>元数据是过滤的基础</h4>
+<p><code>platform</code> 和 <code>category</code> 进了 metadata，检索时才能先把范围缩到「京东 / 服饰」。这叫<strong>元数据过滤（pre-filter）</strong>，比先全库检索再筛选更准也更省。</p>
+
+<h3>4.2 KnowledgeIndexService —— 入库与幂等</h3>
+
+<p><strong>职责</strong>：把片段写进向量库；同一份规范内容没变就不重复写。</p>
+
+<pre><code>String hash = sha256(chunks.stream().map(Document::getText).collect(joining("\n")));
+String oldHash = jdbc.query("select content_hash from knowledge_doc where doc_id = ?",
+        rs -&gt; rs.next() ? rs.getString(1) : null, docId);
+
+if (hash.equals(oldHash)) {            // 内容没变 → 跳过，省一次 embedding 的钱
+    log.info("规范 {} 未变化，跳过入库（{} 块）", docId, chunks.size());
+    continue;
+}
+vectorStore.delete(new FilterExpressionBuilder().eq("docId", docId).build());  // 先删旧向量
+vectorStore.add(chunks);                                                       // 再写新向量
+jdbc.update("insert into knowledge_doc(...) values (...) on conflict (doc_id) do update set ...");</code></pre>
+
+<h4>为什么要判重</h4>
+<p>每次调用嵌入接口都要花钱、也要时间。应用每重启一次就把 24 条重新 embed 一遍，既慢又浪费。哈希比对让「内容没变就一次接口都不调」。</p>
+<p><strong>为什么先删后写</strong>：向量库没有「按 docId 覆盖」的语义。如果只 add，改过的规范会和旧版本同时存在，检索可能召回已经作废的条款。先按元数据 <code>docId</code> 删干净，再整份写入。</p>
+
+<h4>懒加载</h4>
+<pre><code>private volatile boolean indexed;
+
+public synchronized void ensureIndexed() {
+    if (indexed) return;
+    try { indexAll(); indexed = true; }
+    catch (Exception e) { log.error("规范入库失败", e); }
+}</code></pre>
+<p><code>ensureIndexed()</code> 在第一次合规检查时才真正入库，而不是应用一启动就跑。<strong>原因</strong>：跑 <code>@SpringBootTest</code> 时没有嵌入密钥，启动即入库会让一大批与本模块无关的测试全挂。<code>synchronized</code> + <code>volatile</code> 保证并发第一次请求时只入库一次。</p>
+<p><strong>代价</strong>：第一次调 <code>/api/compliance/check</code> 要等 24 条 embedding，明显慢。这点写在边界里了。</p>
+
+<h3>4.3 KnowledgeRetriever —— 两档检索参数</h3>
+
+<p><strong>职责</strong>：元数据过滤 + 向量 Top-K。对外是两个方法，差别只有参数。</p>
+
+<pre><code>/** 规范问答：按问题召回最相关的几条条款，不相关就返回空。 */
+public List&lt;Document&gt; search(String platform, String category, String query) {
+    return search(platform, category, query, topK, threshold);              // 3 / 0.5
+}
+
+/** 合规检查：按本轮目标召回适用条款，阈值更低、条数更多。 */
+public List&lt;Document&gt; searchForCompliance(String platform, String category, String query) {
+    return search(platform, category, query, complianceTopK, complianceThreshold);  // 5 / 0.3
+}
+
+private List&lt;Document&gt; search(String platform, String category, String query, int k, double minScore) {
+    SearchRequest request = SearchRequest.builder()
+            .query(query).topK(k).similarityThreshold(minScore)
+            .filterExpression(scope(platform, category))   // platform == ? and category == ?
+            .build();
+    return vectorStore.similaritySearch(request);
+}</code></pre>
+
+<h4>为什么两档参数不一样</h4>
+<table>
+<thead><tr><th></th><th>规范问答</th><th>合规检查</th></tr></thead>
+<tbody>
+<tr><td>问题形态</td><td>一个明确的问题</td><td>一个宽泛的目标</td></tr>
+<tr><td>答错的代价</td><td>答非所问，用户立刻看出来</td><td><strong>漏召回 = 漏检，没人看得出来</strong></td></tr>
+<tr><td>取舍</td><td>宁可不答（Top-3 / 0.5）</td><td>宁可多召几条再逐条判（Top-5 / 0.3）</td></tr>
+</tbody>
+</table>
+<p>这是整个模块里最值得讲的一个设计判断：<strong>同一个检索能力，因为下游用途不同，参数就该不同</strong>。问答的错误是「答错」，用户会纠正；合规的错误是「该拦没拦」，静悄悄地放过去。所以合规这边把阈值放低、条数放多。</p>
+
+<h3>4.4 ComplianceRuleProperties —— 规则表</h3>
+
+<pre><code>@ConfigurationProperties("retouch.knowledge.compliance")
+public record ComplianceRuleProperties(List&lt;Rule&gt; rules) {
+    public record Rule(String id, String message, List&lt;String&gt; keywords,
+                       List&lt;String&gt; requireAny, List&lt;String&gt; forbid) {
+        public boolean matches(String text) {
+            return keywords != null &amp;&amp; keywords.stream().anyMatch(text::contains);
+        }
+    }
+}</code></pre>
+
+<p><strong>职责</strong>：把「条款里出现什么词」映射成「计划必须包含 / 禁止包含哪些工具」。规则写在 <code>application.yml</code>，新增检查项不用改 Java、不用重新编译。</p>
+
+<h4>为什么用关键词，而不是让模型判断条款是否被违反</h4>
+<p>三个理由，面试可以直接答：<strong>确定性</strong>（同样的输入永远同样的结果，可测试、可复现）、<strong>零成本</strong>（不调模型）、<strong>可审计</strong>（违规时能说清是哪条规则、缺哪个工具）。让模型判断的话，同一个计划两次调用可能给不同结论，这在「硬校验」里是不能接受的。</p>
+<p><strong>代价也要承认</strong>：关键词是脆的。条款换个说法（「白底」写成「背景色值 #FFFFFF」）就匹配不上。这属于已知边界，写在第 7 节。</p>
+
+<h3>4.5 ComplianceChecker —— 核心</h3>
+
+<h4>拼检索词</h4>
+<pre><code>String query(String goal, List&lt;String&gt; toolNames) {
+    Set&lt;String&gt; labels = toolNames.stream()
+            .map(name -&gt; registry.find(name).map(ToolSpec::label).orElse(name))
+            .collect(toCollection(LinkedHashSet::new));
+    String goalText = goal == null ? "" : goal.strip();
+    if (labels.isEmpty()) return goalText;
+    return (goalText.isEmpty() ? "" : goalText + "；") + "计划操作：" + String.join("、", labels);
+}</code></pre>
+<p><strong>为什么要带上工具中文名</strong>：工具名是 <code>set_layer_text</code> 这种英文标识，嵌入模型对它没什么语义理解；中文名「改文字」能和条款里的「不得出现促销文案、水印」产生相似度。而且这个中文名来自 <code>ToolRegistry</code> 的 <code>label</code> —— <strong>和手动接口、模型 Schema 是同一份规格</strong>，改工具名不会漏改这里。</p>
+<p><strong>为什么 goal 必填</strong>：只靠工具名检索会出大问题。「翻转」本身跟「背景必须纯白」没有相似度，于是背景条款召不回来，计划就被放行了 —— 但这个计划恰恰<em>因为没做背景处理</em>才该被拦。<strong>要查什么，取决于用户想干什么，不取决于计划里已经有什么。</strong>这是 goal 作为必填字段的理由。</p>
+
+<h4>判定主循环</h4>
+<pre><code>List&lt;Document&gt; docs = retriever.searchForCompliance(platform, category, query);
+if (docs.isEmpty()) {
+    return new Result(false, query, sources, List.of(), List.of("没有检索到适用规范，需人工核对"));
+}
+if (rules.isEmpty()) {
+    return new Result(false, query, sources, List.of(), List.of("没有配置合规规则，需人工核对"));
+}
+
+for (Document doc : docs) {
+    for (ComplianceRuleProperties.Rule rule : rules) {
+        if (!rule.matches(doc.getText())) continue;          // 这条条款跟这条规则无关
+        boolean ok = true; String detail = "满足";
+        if (rule.requireAny() != null &amp;&amp; !rule.requireAny().isEmpty()) {
+            ok = rule.requireAny().stream().anyMatch(tools::contains);
+            detail = ok ? "计划包含所需工具" : "计划缺少 " + String.join(" / ", rule.requireAny());
+        }
+        if (rule.forbid() != null) {
+            for (String forbidden : rule.forbid()) {
+                if (tools.contains(forbidden)) { ok = false; detail = "计划包含禁止的工具 " + forbidden; break; }
+            }
+        }
+        findings.add(new Finding(ref, clause(text), doc.getScore(), rule.message(), ok, detail));
+        if (!ok) violations.add(ref + "：" + rule.message() + "（" + detail + "）");
+    }
+}</code></pre>
+
+<h4>三个「不通过」的分支，都是故意的</h4>
+<ul>
+  <li><strong>召回为空</strong> → 不通过。没有依据就不该放行。</li>
+  <li><strong>没配规则</strong> → 不通过。配置丢了不能静默变成「全放行」。</li>
+  <li><strong>召回了但没有规则命中</strong> → 不通过。说明规范覆盖到了这个场景，而检查能力没跟上，应该让人看一眼。</li>
+</ul>
+<p>统一的思路是 <strong>fail-closed（失败即关闭）</strong>：任何「我不确定」的情况都不放行。反过来设计（不确定就放行）会让这个校验在最该起作用的时候失效。</p>
+
+<h3>4.6 ComplianceController —— 独立入口</h3>
+
+<pre><code>@RestController
+@RequestMapping("/api/compliance")
+class ComplianceController {
+    record CheckRequest(@NotBlank String platform, @NotBlank String category,
+                        @NotBlank @Size(max = 500) String goal,
+                        @NotEmpty List&lt;String&gt; tools) {}
+
+    record CheckResponse(boolean passed, String query, List&lt;String&gt; sources,
+                         List&lt;ComplianceChecker.Finding&gt; findings, List&lt;String&gt; violations) {}
+}</code></pre>
+
+<p><strong>为什么是独立接口而不是插进 Agent 主流程</strong>：主流程已经有完整的测试和行为评测基线（44 例、跑过 3 轮）。在里面插一个会调远程嵌入接口的步骤，等于把评测的稳定性和成本都绑上去。独立接口可以先把能力做对、做出证据，再决定要不要接。<strong>这是取舍，不是遗漏</strong> —— 面试被问「为什么没接进去」就这样答，并补一句「接的话我会放在计划校验通过之后、落库待确认之前」。</p>
+
+<h3>4.7 KnowledgeSearchRunner —— 冒烟验证</h3>
+
+<pre><code>@Component
+@ConditionalOnProperty(name = "retouch.knowledge.demo", havingValue = "true")
+public class KnowledgeSearchRunner implements ApplicationRunner { ... }</code></pre>
+
+<p>只在显式打开开关时运行，跑四组合规用例和两组问答，把召回、分数、判定全部打到日志。第 6 节的数据就是它跑出来的。正常启动完全不执行。</p>
+
+<h3>4.8 支撑件：EmbeddingConfig 与建表 SQL</h3>
+
+<pre><code>@Primary @Bean
+public EmbeddingModel knowledgeEmbeddingModel(
+        @Value("${retouch.knowledge.embedding.api-key:}") String apiKey,
+        @Value("${retouch.knowledge.embedding.base-url:}") String baseUrl,
+        @Value("${retouch.knowledge.embedding.model:}") String model) {
+    return new OpenAiEmbeddingModel(MetadataMode.EMBED,
+            OpenAiEmbeddingOptions.builder().apiKey(apiKey).baseUrl(baseUrl).model(model).build());
+}</code></pre>
+<p>走 <strong>OpenAI 兼容接口</strong>，所以换服务商只改配置不改代码（本机用的是阿里云百炼的 1024 维嵌入模型）。密钥、地址、模型名全部来自环境变量，仓库里一个都没有。</p>
+
+<pre><code>CREATE TABLE IF NOT EXISTS knowledge_doc (
+    doc_id VARCHAR(64) PRIMARY KEY,
+    version INT NOT NULL,
+    title VARCHAR(200), platform VARCHAR(32), category VARCHAR(32),
+    content_hash VARCHAR(64) NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT now()
+);</code></pre>
+<p>只有这一张表是自己建的（Flyway <code>V3__knowledge.sql</code>）。<code>vector_store</code> 表由 Spring AI 的 <code>initialize-schema: true</code> 自动建，字段是 <code>id uuid / content text / metadata json / embedding vector(1024)</code>，HNSW 余弦索引。</p>
+
+<div class="note">
+  <p><strong>pgvector 是什么。</strong>PostgreSQL 的一个插件，给它加了 <code>vector</code> 字段类型和向量距离运算。所以这里<strong>没有引入新的数据库</strong> —— 还是那台 PostgreSQL，只是换了带插件的镜像 <code>pgvector/pgvector:pg17</code>。面试被问「为什么不用 Milvus/Qdrant」就答：语料只有 24 条，没必要多运维一个组件；现有 PG 加插件就够，真到千万级再换专用向量库。</p>
+</div>
+
+<h2 id="config">5. 配置项全解</h2>
+
+<pre><code>spring:
+  ai:
+    vectorstore:
+      pgvector:
+        index-type: HNSW            # 近似最近邻索引
+        distance-type: COSINE_DISTANCE
+        dimensions: 1024            # 必须和嵌入模型的输出维度一致
+        initialize-schema: true     # 由 Spring AI 建 vector_store 表
+        table-name: vector_store
+
+retouch:
+  knowledge:
+    embedding:
+      api-key:  ${EMBEDDING_API_KEY:}      # 仓库里不留密钥
+      base-url: ${EMBEDDING_BASE_URL:}
+      model:    ${EMBEDDING_MODEL:}
+    top-k: 3                               # 规范问答
+    similarity-threshold: 0.5
+    compliance:
+      top-k: 5                             # 合规检查
+      similarity-threshold: 0.3
+      rules:
+        - id: background-white
+          message: 背景必须纯白
+          keywords: [纯白, 白底, 白色背景]
+          require-any: [remove_background, replace_background]
+        - id: no-text
+          message: 主图不得出现文字/促销元素
+          keywords: [促销, 水印, 文字]
+          forbid: [set_layer_text]
+        - id: square-size
+          message: 首图需裁剪或补边到规定比例
+          keywords: [正方形, 比例]
+          require-any: [crop_canvas, prepare_delivery_sizes, expand_canvas]</code></pre>
+
+<table>
+<thead><tr><th>配置</th><th>含义</th><th>调大 / 调小会怎样</th></tr></thead>
+<tbody>
+<tr><td><code>dimensions: 1024</code></td><td>向量维度</td><td>和模型输出不一致，写入向量库直接报错。换嵌入模型必须同步改这里</td></tr>
+<tr><td><code>index-type: HNSW</code></td><td>近似最近邻索引</td><td>24 条数据其实用不上索引；语料大了才有意义。是近似检索，不保证绝对精确</td></tr>
+<tr><td><code>top-k</code></td><td>最多召回几条</td><td>调大：更不容易漏检，但无关条款混进来可能误触发规则。调小：快，但漏检风险上升</td></tr>
+<tr><td><code>similarity-threshold</code></td><td>相似度下限</td><td>调高：无关问题被挡住，但相关条款也可能被挡。调低：召回变多，噪声变多</td></tr>
+<tr><td><code>require-any</code></td><td>计划必须含其中之一</td><td>管「缺了什么」，比如没去背景</td></tr>
+<tr><td><code>forbid</code></td><td>计划不得包含</td><td>管「多做了什么」，比如加了文字</td></tr>
+</tbody>
+</table>
+
+<h2 id="data">6. 实测数据</h2>
+
+<p>下面全部来自本机真实嵌入模型跑出来的日志（<code>RETOUCH_KNOWLEDGE_DEMO=true</code>），不是估计值。入库：三份规范各 8 块，共 24 块。</p>
+
+<h3>6.1 规范问答（Top-3 / 阈值 0.5）</h3>
+<table>
+<thead><tr><th>查询</th><th>结果</th></tr></thead>
+<tbody>
+<tr><td>首图背景有什么要求</td><td>3 条：rule-1 背景 <strong>0.776</strong>、rule-3 文案 0.703、rule-2 尺寸 0.697</td></tr>
+<tr><td>退货政策是什么</td><td><strong>0 条</strong>（阈值 0.35 时会误召回 2 条，所以选了 0.5）</td></tr>
+</tbody>
+</table>
+
+<h3>6.2 合规检查（Top-5 / 阈值 0.3）</h3>
+<p>前三组目标都是「把这张商品图做成京东服饰类目的首图」。</p>
+<table>
+<thead><tr><th>计划工具</th><th>召回</th><th>结果</th><th>原因</th></tr></thead>
+<tbody>
+<tr><td><code>flip_layer</code></td><td>5 条</td><td class="no">不通过</td><td>rule-1 背景 0.724 缺去背景工具；rule-2 比例 0.722 缺裁剪/补边工具</td></tr>
+<tr><td><code>remove_background</code> + <code>crop_canvas</code></td><td>5 条</td><td class="ok">通过</td><td>rule-1 <strong>0.830</strong>、rule-3 0.773、rule-2 0.768 全部满足</td></tr>
+<tr><td><code>remove_background</code> + <code>set_layer_text</code></td><td>5 条</td><td class="no">不通过</td><td>rule-3 文案 0.791 命中禁止工具；rule-2 仍缺比例工具</td></tr>
+<tr><td>目标换成「帮我写一首关于春天的诗」+ <code>flip_layer</code></td><td><strong>0 条</strong></td><td class="no">不通过</td><td>没有检索到适用规范，需人工核对</td></tr>
+</tbody>
+</table>
+
+<div class="note">
+  <p><strong>这组数据最该讲的是第一组和第四组的对比。</strong>同样是 <code>flip_layer</code>：目标是做首图，就被背景和比例两条拦下；目标跟商品图无关，就连依据都检索不到、直接不放行。<strong>决定「这次该查哪些条款」的是检索</strong> —— 如果像最初那样把该类目条款全部取出来，这两种情况的行为完全一样，向量就只是摆设。</p>
+  <p>还有个细节值得留意：第二组通过时 rule-1 的分数（0.830）明显高于第一组（0.724）。因为检索词里多了「去背景」「裁剪」，和背景、尺寸条款的语义更贴近。<strong>检索词带上计划工具，是会实打实影响召回的。</strong></p>
+</div>
+
+<h3>6.3 测试</h3>
+<ul>
+  <li><code>ComplianceCheckerTest</code> 7 例，纯逻辑，用 Mockito 给定检索结果，不连库不调模型：检索词拼接、缺背景工具、去背景通过、加文字违规、空召回、只召回部分条款、有条款无匹配规则。</li>
+  <li><code>EmbeddingConfigTest</code>：真调远程嵌入接口验证维度 = 1024，<strong>默认跳过</strong>，要跑得显式打开 <code>-Dretouch.real-embedding=true</code>。这样别人 clone 下来没有密钥也能全绿。</li>
+  <li>全量后端：<strong>19 个类、89 个通过、0 失败、1 跳过</strong>。</li>
+</ul>
+
+<h2 id="limits">7. 边界与已知代价</h2>
+
+<div class="note bad">
+  <p><strong>第一条最重要，面试必问，必须自己先说出来：召回不足等于漏检。</strong></p>
+  <p>只有被召回的条款才会参与判定。假如某次检索没把「背景」那条召回来，缺少去背景工具的计划就会被放行 —— 而且没有任何报错。这是「用检索收敛检查范围」的固有代价。</p>
+  <p>现在的缓解：① 空召回一律不放行；② 合规这档阈值放低、条数放多；③ 专门写了一个测试 <code>onlyRecalledClausesAreChecked</code> 把这个行为钉死，免得以后有人误以为它是全量校验。</p>
+  <p>语料再大该怎么办：加关键词兜底（BM25 / 全文检索）做 hybrid，或者把 <code>forbid</code> 这类「禁止项」改成全量生效、只用检索收敛 <code>require-any</code> 这类「必需项」。</p>
+</div>
+
+<ul>
+  <li><strong>只做计划级校验</strong>：校验的是「计划里有哪些工具」，不验证执行结果。计划里有 <code>remove_background</code> 就算满足「白底」，但最终图片是不是真白底，这里不管。</li>
+  <li><strong>规则是关键词映射</strong>：条款换个说法就匹配不上；目前只覆盖「背景」「文字/促销」「比例」三类，角度、模特、色彩等条款召回了也没有对应规则。</li>
+  <li><strong>没有生成步骤</strong>：不是完整的检索增强生成。</li>
+  <li><strong>阈值样本少</strong>：0.5 和 0.3 都来自少量手工查询，没有标注集。要讲得硬，得准备 20~30 条带标注的查询算召回率和误召回率。</li>
+  <li><strong>pgvector 侧无自动化测试</strong>：元数据过滤、阈值、入库判重只有手动运行记录；自动化测试只覆盖判定逻辑。</li>
+  <li><strong>无冲突检测</strong>：同一平台两份规范互相矛盾时，没有「列出双方来源、交人工」的分支。</li>
+  <li><strong>无生效时间过滤</strong>：规范的生效/失效时间没有参与检索，靠人工维护语料版本。</li>
+  <li><strong>首次请求慢</strong>：懒加载会在第一次 check 时做 24 条 embedding。</li>
+  <li><strong>语料是自己编的</strong>：3 份模拟规范、24 个条款，不能据此推断真实大语料的效果。</li>
+</ul>
+
+<h2 id="qa">8. 面试问答</h2>
+
+<p class="q">这个模块是 RAG 吗？</p>
+<p class="a">是向量检索，但没有生成那一步，所以我不叫它 RAG。检索结果不进提示词、不交给模型改写，而是进校验器做硬判定。准确说是「用检索给规则校验供给约束」。</p>
+
+<p class="q">为什么不把规范直接写进提示词？</p>
+<p class="a">三个原因。规范会越来越多，全塞进去提示词爆、每轮都花钱；模型可能视而不见，没有确定性；出了问题无法追溯是哪条规范。做成检索 + 规则后，判定是确定的、可测试的，违规时能指到具体条款编号。</p>
+
+<p class="q">检索词是怎么构造的？为什么要有 goal？</p>
+<p class="a">检索词 = 本轮目标 + 计划里工具的中文名。goal 必填，因为<strong>要查什么取决于用户想干什么，不取决于计划里已经有什么</strong>。比如计划只有「翻转」，如果只拿工具名去检索，背景条款根本召不回来，而这个计划恰恰因为没做背景处理才该被拦。工具中文名来自 ToolRegistry 的 label，和手动接口、模型 Schema 是同一份规格。</p>
+
+<p class="q">为什么问答和合规用两套检索参数？</p>
+<p class="a">因为两边犯错的代价不一样。问答答错，用户立刻看得出来，所以宁可不答，用 Top-3、阈值 0.5。合规漏检是静悄悄放过去，没人看得出来，所以宁可多召回几条再逐条判，用 Top-5、阈值 0.3。</p>
+
+<p class="q">阈值 0.5 和 0.3 是怎么定的？</p>
+<p class="a">实话说是少量手工查询试出来的：0.35 时「退货政策是什么」会误召回 2 条，0.5 时是 0 条，而相关问题仍然召回 3 条。样本太少，只能算演示级取值。要做扎实，得准备二三十条带标注的查询，看召回率和误召回率再定。</p>
+
+<p class="q">这个方案最大的风险是什么？</p>
+<p class="a">召回不足等于漏检。只有召回到的条款会参与判定，漏召回的规则不会报错、不会提示，就是悄悄放行了。所以我做了三件事：空召回一律不放行；合规这档阈值放低条数放多；写了一个测试把「只召回部分条款就只判这部分」钉死，免得以后被误当成全量校验。语料大了要加关键词兜底做 hybrid 检索。</p>
+
+<p class="q">为什么规则用关键词匹配，不用模型判断？</p>
+<p class="a">确定性、零成本、可审计。硬校验必须每次结果一样、能写测试、能说清为什么不通过。用模型判断的话同一个计划两次可能给不同结论。代价是关键词脆，条款换个说法就匹配不上，这点我写在文档边界里了。</p>
+
+<p class="q">为什么用 pgvector，不用 Milvus 这类专用向量库？</p>
+<p class="a">语料只有 24 条，没必要多运维一个组件。pgvector 是 PostgreSQL 的插件，项目本来就在用 PG，换个带插件的镜像就行，事务和备份都沿用原来那套。真到千万级向量、要高 QPS 的时候再换专用库。</p>
+
+<p class="q">怎么保证重启不重复花 embedding 的钱？</p>
+<p class="a">每份规范算一个内容哈希存在 knowledge_doc 表里，入库前先比对，一样就整份跳过。内容变了则先按 docId 删掉旧向量再整份写入，避免新旧版本同时存在被检索到。</p>
+
+<p class="q">为什么没接进 Agent 主流程？</p>
+<p class="a">主流程有 44 例冻结评测集和一整套测试，插一个会调远程嵌入接口的步骤会把评测的稳定性和成本都绑进去。我先把这个能力做成独立接口、跑出证据。真要接，我会放在计划校验通过之后、落库等用户确认之前，不通过就不进待确认队列。</p>
+
+<p class="q">如果让你继续做，下一步做什么？</p>
+<p class="a">按优先级：① 补一个带标注的查询集，把阈值从「试出来的」变成「测出来的」；② 加关键词兜底做 hybrid，降低漏召回；③ 把 forbid 类规则改成全量生效，只用检索收敛 require-any；④ 给 pgvector 那层补集成测试，现在只有手动运行记录。</p>
+
+<h2 id="hands">9. 动手验证清单</h2>
+
+<p>读完上面，按这个顺序亲手跑一遍。<strong>每一步都写了「预期看到什么」，看到了才算过。</strong></p>
+
+<h3>第 0 步：起环境</h3>
+<pre><code>export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+cd ~/Desktop/项目/spring-ai-retouch-agent
+docker compose up -d postgres redis
+docker ps          # 预期：postgres 和 redis 都在，postgres 用的是 pgvector/pgvector:pg17</code></pre>
+
+<h3>第 1 步：跑单测（不花钱、不连网）</h3>
+<pre><code>cd server &amp;&amp; ./mvnw -q test -Dtest=ComplianceCheckerTest</code></pre>
+<p>预期：7 个通过。<strong>这 7 个用例就是这个模块的行为说明书</strong>，打开 <span class="file">ComplianceCheckerTest.java</span> 看一遍每个用例在验什么。</p>
+
+<h3>第 2 步：跑冒烟，看真实召回与分数</h3>
+<pre><code>cd server &amp;&amp; RETOUCH_KNOWLEDGE_DEMO=true ./mvnw spring-boot:run</code></pre>
+<p>预期：日志里先出现「规范加载完成：24 个片段」和三份各「入库完成：8 块」，然后是以【开头的六组结果，数字应该和第 6 节对得上。看完 Ctrl-C。</p>
+<p><strong>再启动一次</strong>：这次三份都应该打「未变化，跳过入库」—— 这就是哈希判重在起作用。</p>
+
+<h3>第 3 步：自己调接口</h3>
+<p>先注册登录拿 Cookie（用户名 3–32 位字母数字下划线，密码 6–64 位），再调：</p>
+<pre><code>curl -s -X POST http://127.0.0.1:7302/api/compliance/check \
+  -H 'Content-Type: application/json' -b cookies.txt \
+  -d '{"platform":"jd","category":"apparel",
+       "goal":"把这张商品图做成京东服饰类目的首图",
+       "tools":["flip_layer"]}'</code></pre>
+<p>预期：<code>passed: false</code>，violations 里有背景和比例两条，sources 里是 5 个 <code>JD-APPAREL-001#rule-N</code>。</p>
+
+<h3>第 4 步：四个小实验（这步最长知识）</h3>
+<table>
+<thead><tr><th>改什么</th><th>预期结果</th><th>说明了什么</th></tr></thead>
+<tbody>
+<tr><td>goal 换成「帮我写一首关于春天的诗」</td><td>召回 0 条、不通过</td><td>检索决定了查不查得到依据</td></tr>
+<tr><td>tools 换成 <code>["remove_background","crop_canvas"]</code></td><td>通过，rule-1 分数升到 0.83 左右</td><td>检索词里的工具名会影响召回分数</td></tr>
+<tr><td>把 <code>compliance.similarity-threshold</code> 调到 0.8 再重启</td><td>召回变少甚至为 0，于是不通过</td><td>阈值调高会把该查的条款挡在外面 —— 漏检的来源</td></tr>
+<tr><td>在 yml 里加一条规则（比如关键词「模特」、forbid 某个工具）</td><td>不用改 Java，重启即生效</td><td>规则表是配置，不是代码</td></tr>
+</tbody>
+</table>
+
+<h3>第 5 步：自测，不看文档说出来</h3>
+<ol>
+  <li>为什么 goal 必须填？只用工具名检索会出什么问题？</li>
+  <li>问答和合规的两套参数为什么不一样？</li>
+  <li>三个「不通过」的分支分别是什么情况？为什么都选择不放行？</li>
+  <li>这个方案最大的风险是什么？你做了什么缓解？</li>
+  <li>哈希判重解决什么问题？为什么要先删后写？</li>
+  <li>为什么说它不是完整的 RAG？</li>
+</ol>
+<p>这六题能用自己的话讲顺，这个模块就算掌握了。讲不顺的那题，回到对应小节再读一遍 —— 第 1、2 题看 4.3 和 4.5，第 3 题看 4.5，第 4 题看第 7 节，第 5 题看 4.2，第 6 题看第 1 节。</p>
+
+<footer>
+  <p>对应代码：<span class="file">server/src/main/java/io/github/zzzzain777/retouch/knowledge/</span>、<span class="file">config/EmbeddingConfig.java</span>、<span class="file">resources/knowledge/*.md</span>、<span class="file">resources/db/migration/V3__knowledge.sql</span>。</p>
+  <p>文字版见 <span class="file">docs/knowledge-rag.md</span>；本页数据来自本机真实嵌入模型的运行日志。</p>
+</footer>
+
+</div>
+</body>
+</html>
